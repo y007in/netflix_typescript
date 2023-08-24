@@ -5,6 +5,8 @@ import App from "./App";
 import { RecoilRoot } from "recoil";
 import { ThemeProvider, createGlobalStyle } from "styled-components";
 import { theme } from "./theme";
+import { QueryClient, QueryClientProvider } from "react-query";
+const client = new QueryClient();
 
 const GlobalStyle = createGlobalStyle`
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400&display=swap');
@@ -57,8 +59,9 @@ table {
 body{
   font-weight : 300;
   font-family: 'Source Sans 3', sans-serif;
-  color : black;
+  color : ${(props) => props.theme.white.darker};
   line-height : 1.2;
+  background-color : #000;
 }
 a{
   text-decoration : none;
@@ -72,10 +75,12 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <RecoilRoot>
-      <ThemeProvider theme={theme}>
-        <GlobalStyle />
-        <App />
-      </ThemeProvider>
+      <QueryClientProvider client={client}>
+        <ThemeProvider theme={theme}>
+          <GlobalStyle />
+          <App />
+        </ThemeProvider>
+      </QueryClientProvider>
     </RecoilRoot>
   </React.StrictMode>
 );
