@@ -117,12 +117,10 @@ function Header() {
   const { scrollY } = useScroll();
   const toggleSearch = () => {
     if (searchOpen) {
-      // trigger the close animation
       inputAnimation.start({
         scaleX: 0,
       });
     } else {
-      // trigger the open animation
       inputAnimation.start({
         scaleX: 1,
       });
