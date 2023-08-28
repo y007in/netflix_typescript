@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll } from "framer-motion";
 import { getMovies, IGetMoviesResult } from "../api";
 import { makeImagePath } from "../utill";
 import styled from "styled-components";
@@ -82,42 +82,77 @@ const Overlay = styled(motion.div)`
   position: fixed;
   top: 0;
   width: 100%;
-  height: inherit;
-  background-color: rgba(0, 0, 0, 0.7);
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
   opacity: 0;
 `;
 
+const BigMovie = styled(motion.div)`
+  position: absolute;
+  width: 40vw;
+  height: 80vh;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 15px;
+  background-color: ${(props) => props.theme.black.lighter};
+`;
+const BigCover = styled.div`
+  width: 100%;
+  background-size: cover;
+  background-position: center center;
+  height: 350px;
+`;
+
+const BigTitle = styled.h2`
+  color: ${(props) => props.theme.white.lighter};
+  padding: 10px;
+  font-size: 36px;
+  position: relative;
+  top: -60px;
+`;
+const BigOverview = styled.p`
+  padding: 20px;
+  position: relative;
+  top: -80px;
+  color: ${(props) => props.theme.white.lighter};
+`;
 // Animation
 const rowVariants = {
   hidden: {
-    x: window.outerWidth + 5,
+    x: window.innerWidth + 5,
   },
   visible: {
     x: 0,
   },
   exit: {
-    x: -window.outerWidth - 5,
+    x: -window.innerWidth - 5,
   },
 };
-const BoxVariants = {
-  normal: { scale: 1 },
+
+const boxVariants = {
+  normal: {
+    scale: 1,
+  },
   hover: {
-    zIndex: 999,
-    scale: 1.2,
-    y: -10,
+    zIndex: 99,
+    scale: 1.5,
+    y: -50,
     transition: {
-      delay: 0.2,
+      delay: 0.5,
       duration: 0.3,
-      type: "spring",
+      type: "tween",
     },
   },
 };
-const InfoVariants = {
+
+const infoVariants = {
   hover: {
     opacity: 1,
     transition: {
-      delay: 0.2,
-      duration: 0.2,
+      delay: 0.5,
+      duration: 0.3,
       type: "tween",
     },
   },
@@ -130,21 +165,20 @@ const Home = () => {
   // 선언
   const history = useNavigate();
   const bigMovieMatch: PathMatch<string> | null = useMatch("/movies/:movieId");
-  console.log(bigMovieMatch);
+  const { scrollY } = useScroll();
+  // console.log(bigMovieMatch);
   const { data, isLoading } = useQuery<IGetMoviesResult>(
     ["movies", "nowPlaying"],
     getMovies
   );
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
-
-  // 함수
   const increaseIndex = () => {
     if (data) {
       if (leaving) return;
       toggleLeaving();
-      const totalMovies = data?.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset);
+      const totalMovies = data.results.length - 1;
+      const maxIndex = Math.floor(totalMovies / offset) - 1;
       setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
     }
   };
@@ -153,6 +187,12 @@ const Home = () => {
     history(`/movies/${movieId}`);
   };
   const onOverlayClick = () => history(`/`);
+  const clickedMovie =
+    bigMovieMatch?.params.movieId &&
+    data?.results.find(
+      (movie) => movie.id + "" === bigMovieMatch.params.movieId
+    );
+  console.log(clickedMovie);
 
   return (
     <Wrapper>
@@ -182,16 +222,16 @@ const Home = () => {
                   .slice(offset * index, offset * index + offset)
                   .map((movie) => (
                     <Box
-                      key={movie.id}
                       layoutId={movie.id + ""}
-                      onClick={() => onBoxClicked(movie.id)}
-                      variants={BoxVariants}
+                      key={movie.id}
+                      variants={boxVariants}
                       initial="normal"
                       whileHover="hover"
                       transition={{ type: "tween" }}
+                      onClick={() => onBoxClicked(movie.id)}
                       bgPhoto={makeImagePath(movie.backdrop_path, "w500")}
                     >
-                      <Info variants={InfoVariants}>
+                      <Info variants={infoVariants}>
                         <h4>{movie.title}</h4>
                       </Info>
                     </Box>
@@ -201,26 +241,32 @@ const Home = () => {
           </Slider>
           <AnimatePresence>
             {bigMovieMatch ? (
-              <Overlay
-                onClick={onOverlayClick}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <motion.div
-                  layoutId={bigMovieMatch.params.movieId}
-                  style={{
-                    position: "absolute",
-                    width: "40vw",
-                    height: "80vh",
-                    backgroundColor: "#ccc",
-                    top: 50,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    margin: "0 auto",
-                  }}
+              <>
+                <Overlay
+                  onClick={onOverlayClick}
+                  exit={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                 />
-              </Overlay>
+                <BigMovie
+                  layoutId={bigMovieMatch.params.movieId}
+                  style={{ top: scrollY.get() + 100 }}
+                >
+                  {clickedMovie && (
+                    <>
+                      <BigCover
+                        style={{
+                          backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
+                            clickedMovie.backdrop_path,
+                            "w500"
+                          )})`,
+                        }}
+                      />
+                      <BigTitle>{clickedMovie.title}</BigTitle>
+                      <BigOverview>{clickedMovie.overview}</BigOverview>
+                    </>
+                  )}
+                </BigMovie>
+              </>
             ) : null}
           </AnimatePresence>
         </>
