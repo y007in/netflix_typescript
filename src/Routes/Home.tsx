@@ -171,6 +171,7 @@ const Home = () => {
     ["movies", "nowPlaying"],
     getMovies
   );
+
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const increaseIndex = () => {
