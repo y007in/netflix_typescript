@@ -10,11 +10,16 @@ export interface IMovieTv {
   overview: string;
   //TopRate & popular
   adult?: string;
-  release_date?: number;
+  release_date?: string;
   genre_ids?: number[];
 
   //Tvshow
   name?: string;
+}
+
+export interface IGenre {
+  id: number;
+  name: string;
 }
 
 export interface IGetMoviesResult {
@@ -29,10 +34,7 @@ export interface IGetMoviesResult {
 }
 
 export interface IGetGenre {
-  genres: {
-    id: number;
-    name: string;
-  };
+  genres: IGenre[];
 }
 
 export interface IGetTvResult {

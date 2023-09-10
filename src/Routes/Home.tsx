@@ -100,8 +100,8 @@ const Info = styled(motion.div)`
   height: 100%;
   h4 {
     position: absolute;
-    top: 60%;
-    left: 15px;
+    top: 40%;
+    left: 10px;
     text-align: center;
     font-size: 16px;
     font-weight: bold;
@@ -110,12 +110,36 @@ const Info = styled(motion.div)`
     position: absolute;
     bottom: 0;
     width: 100%;
-    padding: 15px;
+    padding: 8px 10px;
     background-color: ${(props) => props.theme.black.lighter};
-    .InfoBtnBox {
-      display: flex;
-      gap: 5px;
+    .genre {
+      font-size: 12px;
+      &::after {
+        content: "•";
+      }
+      &:last-child {
+        &::after {
+          content: "";
+        }
+      }
     }
+  }
+`;
+const InfoBox = styled.div`
+  display: flex;
+  padding: 5px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  .hd {
+    color: ${(props) => props.theme.white.lighter};
+    border: 1px solid ${(props) => props.theme.white.lighter};
+    border-radius: 5px;
+    padding: 1px 3px;
+    font-size: 8px;
+    font-weight: bold;
+    margin-left: 5px;
   }
 `;
 const InfoBtn = styled.div`
@@ -124,15 +148,17 @@ const InfoBtn = styled.div`
   align-items: center;
   width: 20px;
   height: 20px;
+  margin-right: 8px;
   border: 1px solid ${(props) => props.theme.white.lighter};
   border-radius: 50%;
   background-color: ${(props) => props.theme.black.lighter};
-  font-size: 12px;
+  font-size: 10px;
   color: #000;
   &:first-child {
     background-color: ${(props) => props.theme.white.lighter};
   }
 `;
+
 const Overlay = styled(motion.div)`
   position: fixed;
   top: 0;
@@ -162,17 +188,26 @@ const BigCover = styled.div`
 
 const BigTitle = styled.h2`
   color: ${(props) => props.theme.white.lighter};
-  padding: 10px;
+  padding: 0 30px;
   font-size: 36px;
   position: relative;
-  top: -60px;
+  top: -100px;
 `;
+const BigBox = styled.div`
+  display: flex;
+`;
+
 const BigPlayBtn = styled.button`
+  position: absolute;
+  top: 300px;
+  margin: 0 30px;
   border-radius: 5px;
+  border: none;
   padding: 8px 20px 5px 20px;
   font-size: 16px;
   background-color: ${(props) => props.theme.white.lighter};
 `;
+
 const BigOverview = styled.p`
   padding: 20px;
   color: ${(props) => props.theme.white.lighter};
@@ -218,10 +253,6 @@ const infoVariants = {
 };
 
 type SectionType = "popular" | "nowPlaying" | "topRated";
-type Genre = {
-  id: number;
-  name: string;
-};
 
 // 한번에 보여주고 싶은 영화의 수 = 6
 const offset = 6;
@@ -347,22 +378,12 @@ const Home = () => {
                         <Info variants={infoVariants}>
                           <h4>{movie.title}</h4>
                           <div className="info_content">
-                            <div className="InfoBtnBox">
+                            <InfoBox>
                               <InfoBtn>
                                 <FontAwesomeIcon color="black" icon={faPlay} />
                               </InfoBtn>
                               <InfoBtn>
-                                {plus ? (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faCheck}
-                                  />
-                                ) : (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faPlus}
-                                  />
-                                )}
+                                <FontAwesomeIcon color="white" icon={faPlus} />
                               </InfoBtn>
                               <InfoBtn>
                                 <FontAwesomeIcon
@@ -370,7 +391,22 @@ const Home = () => {
                                   icon={faThumbsUp}
                                 />
                               </InfoBtn>
-                            </div>
+                            </InfoBox>
+                            <InfoBox>
+                              {movie.adult ? "18세" : "15세 이상"}
+                              <div className="hd">HD</div>
+                            </InfoBox>
+                            <InfoBox>
+                              {movie.genre_ids?.map((id) => (
+                                <span className="genre" key={id}>
+                                  {
+                                    genreData?.genres.find(
+                                      (item) => item.id === id
+                                    )?.name
+                                  }
+                                </span>
+                              ))}
+                            </InfoBox>
                           </div>
                         </Info>
                       </Box>
@@ -379,8 +415,10 @@ const Home = () => {
               </AnimatePresence>
             </Slider>
           </SliderBox>
-          <SliderBox onClick={() => increaseIndex("nowPlaying")}>
-            <SliderTitle>현재 상영작</SliderTitle>
+          <SliderBox>
+            <SliderTitle onClick={() => increaseIndex("nowPlaying")}>
+              현재 상영작
+            </SliderTitle>
             <Slider>
               <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
                 <Row
@@ -417,8 +455,10 @@ const Home = () => {
               </AnimatePresence>
             </Slider>
           </SliderBox>
-          <SliderBox onClick={() => increaseIndex("topRated")}>
-            <SliderTitle>Top 10</SliderTitle>
+          <SliderBox>
+            <SliderTitle onClick={() => increaseIndex("topRated")}>
+              Top 10
+            </SliderTitle>
             <Slider>
               <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
                 <Row
@@ -480,8 +520,24 @@ const Home = () => {
                       />
 
                       <BigTitle>{clickedMovie.title}</BigTitle>
-                      <BigPlayBtn>▶️ 재생</BigPlayBtn>
-                      <p>{clickedMovie.release_date}</p>
+                      <BigBox>
+                        <BigPlayBtn>▶️ 재생</BigPlayBtn>
+                      </BigBox>
+                      <BigBox>
+                        <p>{clickedMovie.release_date?.slice(0, 4)}</p>
+                        <div className="hd">HD</div>
+                      </BigBox>
+                      <BigBox>
+                        {clickedMovie.genre_ids?.map((id) => (
+                          <span className="genre" key={id}>
+                            {
+                              genreData?.genres.find((item) => item.id === id)
+                                ?.name
+                            }
+                          </span>
+                        ))}
+                      </BigBox>
+
                       <BigOverview>{clickedMovie.overview}</BigOverview>
                     </>
                   )}
