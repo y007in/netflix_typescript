@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -6,6 +6,7 @@ import {
   faPlay,
   faThumbsUp,
   faCheck,
+  faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import {
@@ -13,8 +14,12 @@ import {
   getMovies,
   getRateMovies,
   getGenreMovies,
+  // getCharacterMovies,
+  // getTrailerMovies,
   IGetMoviesResult,
   IGetGenre,
+  IGetTrailer,
+  IGetCharacter,
 } from "../api";
 import { makeImagePath } from "../utill";
 import styled from "styled-components";
@@ -36,17 +41,20 @@ const Banner = styled.div<{ bgPhoto: string }>`
   flex-direction: column;
   justify-content: center;
   padding: 60px;
-  background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1));
+  background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
     url(${(props) => props.bgPhoto});
   background-size: cover;
 `;
 const Title = styled.h1`
-  font-size: 68px;
-  margin-bottom: 20px;
+  font-size: 55px;
+  font-weight: bold;
+  margin-bottom: 10px;
 `;
 const OverView = styled.p`
-  font-size: 24px;
+  font-size: 20px;
   width: 50%;
+  line-height: 140%;
+  margin-bottom: 20px;
 `;
 
 const SliderBox = styled.div`
@@ -55,12 +63,12 @@ const SliderBox = styled.div`
   display: flex;
   flex-direction: column;
   padding: 0 50px;
-  // border: 1px solid red;
 `;
 
 const SliderTitle = styled.h1`
   color: ${(props) => props.theme.white.lighter};
-  font-size: 36px;
+  font-size: 28px;
+  font-weight: bold;
 `;
 const Slider = styled.div`
   margin-bottom: 250px;
@@ -81,6 +89,7 @@ const Box = styled(motion.div)<{ bgPhoto: string }>`
   color: red;
   font-size: 66px;
   position: relative;
+  top: 10px;
   cursor: pointer;
   border-radius: 5px;
   overflow: hidden;
@@ -142,7 +151,7 @@ const InfoBox = styled.div`
     margin-left: 5px;
   }
 `;
-const InfoBtn = styled.div`
+const InfoBtn = styled.button`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -154,6 +163,7 @@ const InfoBtn = styled.div`
   background-color: ${(props) => props.theme.black.lighter};
   font-size: 10px;
   color: #000;
+  cursor: pointer;
   &:first-child {
     background-color: ${(props) => props.theme.white.lighter};
   }
@@ -170,11 +180,11 @@ const Overlay = styled(motion.div)`
 
 const BigMovie = styled(motion.div)`
   position: absolute;
-  width: 40vw;
-  height: 80vh;
+  width: 80vw;
   left: 0;
   right: 0;
   margin: 0 auto;
+  padding-bottom: 30px;
   overflow: hidden;
   border-radius: 15px;
   background-color: ${(props) => props.theme.black.lighter};
@@ -188,28 +198,51 @@ const BigCover = styled.div`
 
 const BigTitle = styled.h2`
   color: ${(props) => props.theme.white.lighter};
-  padding: 0 30px;
+  padding: 0 25px;
   font-size: 36px;
   position: relative;
   top: -100px;
 `;
 const BigBox = styled.div`
   display: flex;
+  align-items : center;
+  margin-left : 25px;
+  margin-bottom : 10px;
+  .hd {
+    color: ${(props) => props.theme.white.lighter};
+    border: 0.8px solid ${(props) => props.theme.white.lighter};
+    border-radius: 5px;
+    padding: 2px 5px ;
+    font-size: 8px;
+    font-weight: 500;
+    margin-left: 5px;
+  }
+  .genre {
+      &::after {
+        content: "•";
+      }
+      &:last-child {
+        &::after {
+          content: "";
+        }
+      }
 `;
 
 const BigPlayBtn = styled.button`
-  position: absolute;
-  top: 300px;
-  margin: 0 30px;
   border-radius: 5px;
   border: none;
   padding: 8px 20px 5px 20px;
   font-size: 16px;
   background-color: ${(props) => props.theme.white.lighter};
+  cursor: pointer;
+  .icon {
+    margin-right: 5px;
+  }
 `;
 
 const BigOverview = styled.p`
-  padding: 20px;
+  width: 60%;
+  padding: 5px 25px;
   color: ${(props) => props.theme.white.lighter};
 `;
 // Animation
@@ -234,7 +267,7 @@ const boxVariants = {
     scale: 1.5,
     y: -50,
     transition: {
-      delay: 0.5,
+      // delay: 0.5,
       duration: 0.3,
       type: "tween",
     },
@@ -245,7 +278,7 @@ const infoVariants = {
   hover: {
     opacity: 1,
     transition: {
-      delay: 0.5,
+      // delay: 0.5,
       duration: 0.3,
       type: "tween",
     },
@@ -258,7 +291,6 @@ type SectionType = "popular" | "nowPlaying" | "topRated";
 const offset = 6;
 
 const Home = () => {
-  // 선언
   const history = useNavigate();
   const bigMovieMatch: PathMatch<string> | null = useMatch("/movies/:movieId");
   const { scrollY } = useScroll();
@@ -266,13 +298,20 @@ const Home = () => {
     useQuery<IGetMoviesResult>(["movies", "popular"], getPopularMovies);
   const { data: nowPlayingData, isLoading: isNowPlayingLoading } =
     useQuery<IGetMoviesResult>(["movies", "nowPlaying"], getMovies);
-  // console.log(bigMovieMatch);
   const { data: topRatedData, isLoading: isTopRatedLoading } =
     useQuery<IGetMoviesResult>(["movies", "TopRate"], getRateMovies);
   const { data: genreData } = useQuery<IGetGenre>(
     ["movies", "Genre"],
     getGenreMovies
   );
+  // const { data: trailerData } = useQuery<IGetTrailer>(
+  //   ["movies", "Trailer"],
+  //   getTrailerMovies
+  // );
+  // const { data: characterData } = useQuery<IGetCharacter>(
+  //   ["movies", "Trailer"],
+  //   getCharacterMovies
+  // );
 
   const [popularIndex, setPopularIndex] = useState(0);
   const [nowPlayingIndex, setNowPlayingIndex] = useState(0);
@@ -284,6 +323,18 @@ const Home = () => {
     setPlus(!plus);
   };
   const [thumb, setThumb] = useState(false);
+  const onThumbClick = () => {
+    setThumb(!thumb);
+  };
+
+  const [randomIndex, setRandomIndex] = useState(0);
+
+  useEffect(() => {
+    const randomIndex = Math.floor(
+      Math.random() * (popularData?.results.length || 0)
+    );
+    setRandomIndex(randomIndex);
+  }, [popularData]);
 
   const increaseIndex = (section: SectionType) => {
     if (section === "popular" && nowPlayingData) {
@@ -312,6 +363,8 @@ const Home = () => {
   };
 
   let clickedMovie = null;
+  let clickedId: number | null = null;
+
   const onOverlayClick = () => history(`/`);
   if (bigMovieMatch) {
     const movieId = bigMovieMatch.params.movieId;
@@ -330,6 +383,8 @@ const Home = () => {
     }
   }
 
+  const onClickPlay = () => {};
+
   return (
     <Wrapper>
       {isPopularLoading || isNowPlayingLoading || isTopRatedLoading ? (
@@ -338,11 +393,25 @@ const Home = () => {
         <>
           <Banner
             bgPhoto={makeImagePath(
-              nowPlayingData?.results[0].backdrop_path || ""
+              popularData?.results[randomIndex]?.backdrop_path || ""
             )}
           >
-            <Title>{nowPlayingData?.results[0].title}</Title>
-            <OverView>{nowPlayingData?.results[0].overview}</OverView>
+            <Title>{popularData?.results[randomIndex]?.title}</Title>
+            <OverView>{popularData?.results[randomIndex]?.overview}</OverView>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <BigPlayBtn>
+                <FontAwesomeIcon icon={faPlay} className="icon" />
+                재생
+              </BigPlayBtn>
+              <BigPlayBtn>
+                <FontAwesomeIcon
+                  className="icon"
+                  color="black"
+                  icon={faCircleExclamation}
+                />
+                상세보기
+              </BigPlayBtn>
+            </div>
           </Banner>
           <SliderBox>
             <SliderTitle onClick={() => increaseIndex("popular")}>
@@ -382,14 +451,31 @@ const Home = () => {
                               <InfoBtn>
                                 <FontAwesomeIcon color="black" icon={faPlay} />
                               </InfoBtn>
-                              <InfoBtn>
-                                <FontAwesomeIcon color="white" icon={faPlus} />
+                              <InfoBtn onClick={onPlusClick}>
+                                {plus ? (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faCheck}
+                                  />
+                                ) : (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faPlus}
+                                  />
+                                )}
                               </InfoBtn>
-                              <InfoBtn>
-                                <FontAwesomeIcon
-                                  color="white"
-                                  icon={faThumbsUp}
-                                />
+                              <InfoBtn onClick={onThumbClick}>
+                                {thumb ? (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faThumbsUp}
+                                  />
+                                ) : (
+                                  <FontAwesomeIcon
+                                    color="rgba(255,255,255,0.5)"
+                                    icon={faThumbsUp}
+                                  />
+                                )}
                               </InfoBtn>
                             </InfoBox>
                             <InfoBox>
@@ -448,6 +534,54 @@ const Home = () => {
                       >
                         <Info variants={infoVariants}>
                           <h4>{movie.title}</h4>
+                          <div className="info_content">
+                            <InfoBox>
+                              <InfoBtn>
+                                <FontAwesomeIcon color="black" icon={faPlay} />
+                              </InfoBtn>
+                              <InfoBtn onClick={onPlusClick}>
+                                {plus ? (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faCheck}
+                                  />
+                                ) : (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faPlus}
+                                  />
+                                )}
+                              </InfoBtn>
+                              <InfoBtn onClick={onThumbClick}>
+                                {thumb ? (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faThumbsUp}
+                                  />
+                                ) : (
+                                  <FontAwesomeIcon
+                                    color="rgba(255,255,255,0.5)"
+                                    icon={faThumbsUp}
+                                  />
+                                )}
+                              </InfoBtn>
+                            </InfoBox>
+                            <InfoBox>
+                              {movie.adult ? "18세" : "15세 이상"}
+                              <div className="hd">HD</div>
+                            </InfoBox>
+                            <InfoBox>
+                              {movie.genre_ids?.map((id) => (
+                                <span className="genre" key={id}>
+                                  {
+                                    genreData?.genres.find(
+                                      (item) => item.id === id
+                                    )?.name
+                                  }
+                                </span>
+                              ))}
+                            </InfoBox>
+                          </div>
                         </Info>
                       </Box>
                     ))}
@@ -488,6 +622,54 @@ const Home = () => {
                       >
                         <Info variants={infoVariants}>
                           <h4>{movie.title}</h4>
+                          <div className="info_content">
+                            <InfoBox>
+                              <InfoBtn>
+                                <FontAwesomeIcon color="black" icon={faPlay} />
+                              </InfoBtn>
+                              <InfoBtn onClick={onPlusClick}>
+                                {plus ? (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faCheck}
+                                  />
+                                ) : (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faPlus}
+                                  />
+                                )}
+                              </InfoBtn>
+                              <InfoBtn onClick={onThumbClick}>
+                                {thumb ? (
+                                  <FontAwesomeIcon
+                                    color="white"
+                                    icon={faThumbsUp}
+                                  />
+                                ) : (
+                                  <FontAwesomeIcon
+                                    color="rgba(255,255,255,0.5)"
+                                    icon={faThumbsUp}
+                                  />
+                                )}
+                              </InfoBtn>
+                            </InfoBox>
+                            <InfoBox>
+                              {movie.adult ? "18세" : "15세 이상"}
+                              <div className="hd">HD</div>
+                            </InfoBox>
+                            <InfoBox>
+                              {movie.genre_ids?.map((id) => (
+                                <span className="genre" key={id}>
+                                  {
+                                    genreData?.genres.find(
+                                      (item) => item.id === id
+                                    )?.name
+                                  }
+                                </span>
+                              ))}
+                            </InfoBox>
+                          </div>
                         </Info>
                       </Box>
                     ))}
@@ -520,11 +702,49 @@ const Home = () => {
                       />
 
                       <BigTitle>{clickedMovie.title}</BigTitle>
-                      <BigBox>
-                        <BigPlayBtn>▶️ 재생</BigPlayBtn>
+                      <BigBox style={{ position: "absolute", top: "300px" }}>
+                        <BigPlayBtn style={{ margin: "0 10px 0 0" }}>
+                          ▶️ 재생
+                        </BigPlayBtn>
+                        <InfoBtn
+                          onClick={onPlusClick}
+                          style={{
+                            width: "30px",
+                            height: "30px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          {plus ? (
+                            <FontAwesomeIcon color="white" icon={faCheck} />
+                          ) : (
+                            <FontAwesomeIcon color="white" icon={faPlus} />
+                          )}
+                        </InfoBtn>
+                        <InfoBtn
+                          onClick={onThumbClick}
+                          style={{
+                            width: "30px",
+                            height: "30px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          {thumb ? (
+                            <FontAwesomeIcon color="white" icon={faThumbsUp} />
+                          ) : (
+                            <FontAwesomeIcon
+                              color="rgba(255,255,255,0.5)"
+                              icon={faThumbsUp}
+                            />
+                          )}
+                        </InfoBtn>
                       </BigBox>
                       <BigBox>
-                        <p>{clickedMovie.release_date?.slice(0, 4)}</p>
+                        <p style={{ margin: "0 5px 0 0" }}>
+                          {clickedMovie.adult ? "18세" : "15세 이상"}
+                        </p>
+                        <p style={{ fontWeight: "bold" }}>
+                          {clickedMovie.release_date?.slice(0, 4)}
+                        </p>
                         <div className="hd">HD</div>
                       </BigBox>
                       <BigBox>
@@ -539,6 +759,17 @@ const Home = () => {
                       </BigBox>
 
                       <BigOverview>{clickedMovie.overview}</BigOverview>
+                      {/* <BigBox>
+                        {characterData?.cast &&
+                          clickedId !== null &&
+                          characterData.cast
+                            .filter((character) => character.id === clickedId)
+                            .map((character) => (
+                              <span key={character.id}>
+                                {character.original_name}
+                              </span>
+                            ))}
+                      </BigBox> */}
                     </>
                   )}
                 </BigMovie>

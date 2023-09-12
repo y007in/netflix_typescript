@@ -12,9 +12,14 @@ export interface IMovieTv {
   adult?: string;
   release_date?: string;
   genre_ids?: number[];
+  original_name?: string;
 
   //Tvshow
   name?: string;
+}
+export interface ICharacter {
+  id: number;
+  original_name: string;
 }
 
 export interface IGenre {
@@ -36,7 +41,14 @@ export interface IGetMoviesResult {
 export interface IGetGenre {
   genres: IGenre[];
 }
-
+export interface IGetCharacter {
+  id: number;
+  cast: IMovieTv[];
+}
+export interface IGetTrailer {
+  id: number;
+  results: string[];
+}
 export interface IGetTvResult {
   page: number;
   results: IMovieTv[];
@@ -66,6 +78,17 @@ export function getGenreMovies() {
     `${BASE_PATH}/genre/movie/list?api_key=${API_KEY}&language=ko-KR`
   ).then((response) => response.json());
 }
+
+// export function getCharacterMovies() {
+//   return fetch(
+//     `${BASE_PATH}//movie/{movie_id}/credits?api_key=${API_KEY}&language=ko-KR`
+//   ).then((response) => response.json());
+// }
+// export function getTrailerMovies() {
+//   return fetch(
+//     `${BASE_PATH}//movie/{movie_id}//videos?api_key=${API_KEY}&language=ko-KR`
+//   ).then((response) => response.json());
+// }
 
 export function getTv() {
   return fetch(
