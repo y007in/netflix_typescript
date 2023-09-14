@@ -24,6 +24,8 @@ import {
 import { makeImagePath } from "../utill";
 import styled from "styled-components";
 import { useNavigate, useMatch, PathMatch } from "react-router-dom";
+import MovieBox from "../Components/MovieBox";
+import Slider from "../Components/Slider";
 
 const Wrapper = styled.div`
   background: #000;
@@ -70,86 +72,13 @@ const SliderTitle = styled.h1`
   font-size: 28px;
   font-weight: bold;
 `;
-const Slider = styled.div`
-  margin-bottom: 250px;
-`;
+
 const Row = styled(motion.div)`
   display: grid;
   gap: 5px;
   grid-template-columns: repeat(6, 1fr);
   position: absolute;
   width: 100%;
-`;
-const Box = styled(motion.div)<{ bgPhoto: string }>`
-  background-color: white;
-  background-image: url(${(props) => props.bgPhoto});
-  background-size: cover;
-  background-position: center center;
-  height: 200px;
-  color: red;
-  font-size: 66px;
-  position: relative;
-  top: 10px;
-  cursor: pointer;
-  border-radius: 5px;
-  overflow: hidden;
-  &:first-child {
-    transform-origin: center left;
-  }
-  &:last-child {
-    transform-origin: center right;
-  }
-`;
-const Info = styled(motion.div)`
-  color: ${(props) => props.theme.white.lighter};
-  opacity: 0;
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  h4 {
-    position: absolute;
-    top: 40%;
-    left: 10px;
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-  }
-  .info_content {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    padding: 8px 10px;
-    background-color: ${(props) => props.theme.black.lighter};
-    .genre {
-      font-size: 12px;
-      &::after {
-        content: "•";
-      }
-      &:last-child {
-        &::after {
-          content: "";
-        }
-      }
-    }
-  }
-`;
-const InfoBox = styled.div`
-  display: flex;
-  padding: 5px 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  .hd {
-    color: ${(props) => props.theme.white.lighter};
-    border: 1px solid ${(props) => props.theme.white.lighter};
-    border-radius: 5px;
-    padding: 1px 3px;
-    font-size: 8px;
-    font-weight: bold;
-    margin-left: 5px;
-  }
 `;
 const InfoBtn = styled.button`
   display: flex;
@@ -258,37 +187,7 @@ const rowVariants = {
   },
 };
 
-const boxVariants = {
-  normal: {
-    scale: 1,
-  },
-  hover: {
-    zIndex: 99,
-    scale: 1.5,
-    y: -50,
-    transition: {
-      // delay: 0.5,
-      duration: 0.3,
-      type: "tween",
-    },
-  },
-};
-
-const infoVariants = {
-  hover: {
-    opacity: 1,
-    transition: {
-      // delay: 0.5,
-      duration: 0.3,
-      type: "tween",
-    },
-  },
-};
-
 type SectionType = "popular" | "nowPlaying" | "topRated";
-
-// 한번에 보여주고 싶은 영화의 수 = 6
-const offset = 6;
 
 const Home = () => {
   const history = useNavigate();
@@ -336,34 +235,9 @@ const Home = () => {
     setRandomIndex(randomIndex);
   }, [popularData]);
 
-  const increaseIndex = (section: SectionType) => {
-    if (section === "popular" && nowPlayingData) {
-      if (leaving) return;
-      toggleLeaving();
-      const totalMovies = nowPlayingData.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
-      setPopularIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
-    } else if (section === "nowPlaying" && nowPlayingData) {
-      if (leaving) return;
-      toggleLeaving();
-      const totalMovies = nowPlayingData.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
-      setNowPlayingIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
-    } else if (section === "topRated" && topRatedData) {
-      if (leaving) return;
-      toggleLeaving();
-      const totalMovies = topRatedData.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
-      setTopRatedIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
-    }
-  };
-  const toggleLeaving = () => setLeaving((prev) => !prev);
-  const onBoxClicked = (movieId: number) => {
-    history(`/movies/${movieId}`);
-  };
+  const offset = 6;
 
   let clickedMovie = null;
-  let clickedId: number | null = null;
 
   const onOverlayClick = () => history(`/`);
   if (bigMovieMatch) {
@@ -382,8 +256,7 @@ const Home = () => {
       );
     }
   }
-
-  const onClickPlay = () => {};
+  console.log(clickedMovie);
 
   return (
     <Wrapper>
@@ -414,268 +287,28 @@ const Home = () => {
             </div>
           </Banner>
           <SliderBox>
-            <SliderTitle onClick={() => increaseIndex("popular")}>
-              인기있는 영화
-            </SliderTitle>
-            <Slider>
-              <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
-                <Row
-                  variants={rowVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ type: "tween", duration: 1 }}
-                  key={popularIndex}
-                >
-                  {popularData?.results
-                    .slice(1)
-                    .slice(
-                      offset * popularIndex,
-                      offset * popularIndex + offset
-                    )
-                    .map((movie) => (
-                      <Box
-                        layoutId={`box-popular-${movie.id}`}
-                        key={movie.id}
-                        variants={boxVariants}
-                        initial="normal"
-                        whileHover="hover"
-                        transition={{ type: "tween" }}
-                        onClick={() => onBoxClicked(movie.id)}
-                        bgPhoto={makeImagePath(movie.backdrop_path, "w500")}
-                      >
-                        <Info variants={infoVariants}>
-                          <h4>{movie.title}</h4>
-                          <div className="info_content">
-                            <InfoBox>
-                              <InfoBtn>
-                                <FontAwesomeIcon color="black" icon={faPlay} />
-                              </InfoBtn>
-                              <InfoBtn onClick={onPlusClick}>
-                                {plus ? (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faCheck}
-                                  />
-                                ) : (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faPlus}
-                                  />
-                                )}
-                              </InfoBtn>
-                              <InfoBtn onClick={onThumbClick}>
-                                {thumb ? (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faThumbsUp}
-                                  />
-                                ) : (
-                                  <FontAwesomeIcon
-                                    color="rgba(255,255,255,0.5)"
-                                    icon={faThumbsUp}
-                                  />
-                                )}
-                              </InfoBtn>
-                            </InfoBox>
-                            <InfoBox>
-                              {movie.adult ? "18세" : "15세 이상"}
-                              <div className="hd">HD</div>
-                            </InfoBox>
-                            <InfoBox>
-                              {movie.genre_ids?.map((id) => (
-                                <span className="genre" key={id}>
-                                  {
-                                    genreData?.genres.find(
-                                      (item) => item.id === id
-                                    )?.name
-                                  }
-                                </span>
-                              ))}
-                            </InfoBox>
-                          </div>
-                        </Info>
-                      </Box>
-                    ))}
-                </Row>
-              </AnimatePresence>
-            </Slider>
+            <SliderTitle>인기있는 영화</SliderTitle>
+            <Slider
+              movie={popularData?.results || []}
+              genreData={genreData}
+              movieListType="popular"
+            />
           </SliderBox>
           <SliderBox>
-            <SliderTitle onClick={() => increaseIndex("nowPlaying")}>
-              현재 상영작
-            </SliderTitle>
-            <Slider>
-              <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
-                <Row
-                  variants={rowVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ type: "tween", duration: 1 }}
-                  key={nowPlayingIndex}
-                >
-                  {nowPlayingData?.results
-                    .slice(1)
-                    .slice(
-                      offset * nowPlayingIndex,
-                      offset * nowPlayingIndex + offset
-                    )
-                    .map((movie) => (
-                      <Box
-                        layoutId={`box-nowPlaying-${movie.id}`}
-                        key={movie.id}
-                        variants={boxVariants}
-                        initial="normal"
-                        whileHover="hover"
-                        transition={{ type: "tween" }}
-                        onClick={() => onBoxClicked(movie.id)}
-                        bgPhoto={makeImagePath(movie.backdrop_path, "w500")}
-                      >
-                        <Info variants={infoVariants}>
-                          <h4>{movie.title}</h4>
-                          <div className="info_content">
-                            <InfoBox>
-                              <InfoBtn>
-                                <FontAwesomeIcon color="black" icon={faPlay} />
-                              </InfoBtn>
-                              <InfoBtn onClick={onPlusClick}>
-                                {plus ? (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faCheck}
-                                  />
-                                ) : (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faPlus}
-                                  />
-                                )}
-                              </InfoBtn>
-                              <InfoBtn onClick={onThumbClick}>
-                                {thumb ? (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faThumbsUp}
-                                  />
-                                ) : (
-                                  <FontAwesomeIcon
-                                    color="rgba(255,255,255,0.5)"
-                                    icon={faThumbsUp}
-                                  />
-                                )}
-                              </InfoBtn>
-                            </InfoBox>
-                            <InfoBox>
-                              {movie.adult ? "18세" : "15세 이상"}
-                              <div className="hd">HD</div>
-                            </InfoBox>
-                            <InfoBox>
-                              {movie.genre_ids?.map((id) => (
-                                <span className="genre" key={id}>
-                                  {
-                                    genreData?.genres.find(
-                                      (item) => item.id === id
-                                    )?.name
-                                  }
-                                </span>
-                              ))}
-                            </InfoBox>
-                          </div>
-                        </Info>
-                      </Box>
-                    ))}
-                </Row>
-              </AnimatePresence>
-            </Slider>
+            <SliderTitle>현재 상영작</SliderTitle>
+            <Slider
+              movie={nowPlayingData?.results || []}
+              genreData={genreData}
+              movieListType="nowPlaying"
+            />
           </SliderBox>
           <SliderBox>
-            <SliderTitle onClick={() => increaseIndex("topRated")}>
-              Top 10
-            </SliderTitle>
-            <Slider>
-              <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
-                <Row
-                  variants={rowVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ type: "tween", duration: 1 }}
-                  key={topRatedIndex}
-                >
-                  {topRatedData?.results
-                    .slice(1)
-                    .slice(
-                      offset * topRatedIndex,
-                      offset * topRatedIndex + offset
-                    )
-                    .map((movie) => (
-                      <Box
-                        layoutId={`box-topRated-${movie.id}`}
-                        key={movie.id}
-                        variants={boxVariants}
-                        initial="normal"
-                        whileHover="hover"
-                        transition={{ type: "tween" }}
-                        onClick={() => onBoxClicked(movie.id)}
-                        bgPhoto={makeImagePath(movie.backdrop_path, "w500")}
-                      >
-                        <Info variants={infoVariants}>
-                          <h4>{movie.title}</h4>
-                          <div className="info_content">
-                            <InfoBox>
-                              <InfoBtn>
-                                <FontAwesomeIcon color="black" icon={faPlay} />
-                              </InfoBtn>
-                              <InfoBtn onClick={onPlusClick}>
-                                {plus ? (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faCheck}
-                                  />
-                                ) : (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faPlus}
-                                  />
-                                )}
-                              </InfoBtn>
-                              <InfoBtn onClick={onThumbClick}>
-                                {thumb ? (
-                                  <FontAwesomeIcon
-                                    color="white"
-                                    icon={faThumbsUp}
-                                  />
-                                ) : (
-                                  <FontAwesomeIcon
-                                    color="rgba(255,255,255,0.5)"
-                                    icon={faThumbsUp}
-                                  />
-                                )}
-                              </InfoBtn>
-                            </InfoBox>
-                            <InfoBox>
-                              {movie.adult ? "18세" : "15세 이상"}
-                              <div className="hd">HD</div>
-                            </InfoBox>
-                            <InfoBox>
-                              {movie.genre_ids?.map((id) => (
-                                <span className="genre" key={id}>
-                                  {
-                                    genreData?.genres.find(
-                                      (item) => item.id === id
-                                    )?.name
-                                  }
-                                </span>
-                              ))}
-                            </InfoBox>
-                          </div>
-                        </Info>
-                      </Box>
-                    ))}
-                </Row>
-              </AnimatePresence>
-            </Slider>
+            <SliderTitle>Top 10</SliderTitle>
+            <Slider
+              movie={topRatedData?.results || []}
+              genreData={genreData}
+              movieListType="topRated"
+            />
           </SliderBox>
 
           <AnimatePresence>

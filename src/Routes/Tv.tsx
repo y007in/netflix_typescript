@@ -1,10 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "react-query";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faPlus,
+  faPlay,
+  faThumbsUp,
+  faCheck,
+  faCircleExclamation,
+} from "@fortawesome/free-solid-svg-icons";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
-import { getTv, IGetTvResult } from "../api";
+import {
+  getTv,
+  getPopularTv,
+  getAirTv,
+  getGenreMovies,
+  IGetTvResult,
+  IGetGenre,
+} from "../api";
 import { makeImagePath } from "../utill";
 import styled from "styled-components";
 import { useNavigate, useMatch, PathMatch } from "react-router-dom";
+import TvBox from "../Components/TvBox";
 
 const Wrapper = styled.div`
   background: #000;
@@ -27,16 +43,32 @@ const Banner = styled.div<{ bgPhoto: string }>`
   background-size: cover;
 `;
 const Title = styled.h1`
-  font-size: 68px;
-  margin-bottom: 20px;
+  font-size: 55px;
+  font-weight: bold;
+  margin-bottom: 10px;
 `;
 const OverView = styled.p`
-  font-size: 30px;
+  font-size: 20px;
   width: 50%;
+  line-height: 140%;
+  margin-bottom: 20px;
 `;
-const Slider = styled.div`
+
+const SliderBox = styled.div`
   position: relative;
   top: -100px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 50px;
+`;
+
+const SliderTitle = styled.h1`
+  color: ${(props) => props.theme.white.lighter};
+  font-size: 28px;
+  font-weight: bold;
+`;
+const Slider = styled.div`
+  margin-bottom: 250px;
 `;
 const Row = styled(motion.div)`
   display: grid;
@@ -45,39 +77,24 @@ const Row = styled(motion.div)`
   position: absolute;
   width: 100%;
 `;
-const Box = styled(motion.div)<{ bgPhoto: string }>`
-  background-color: white;
-  background-image: url(${(props) => props.bgPhoto});
-  background-size: cover;
-  background-position: center center;
-  height: 200px;
-  color: red;
-  font-size: 66px;
-  position: relative;
+const InfoBtn = styled.button`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border: 1px solid ${(props) => props.theme.white.lighter};
+  border-radius: 50%;
+  background-color: ${(props) => props.theme.black.lighter};
+  font-size: 10px;
+  color: #000;
   cursor: pointer;
-
   &:first-child {
-    transform-origin: center left;
-  }
-  &:last-child {
-    transform-origin: center right;
+    background-color: ${(props) => props.theme.white.lighter};
   }
 `;
-const Info = styled(motion.div)`
-  padding: 20px;
-  // background-color: ${(props) => props.theme.black.lighter};
-  background-color: rgba(0, 0, 0, 0.55);
-  color: ${(props) => props.theme.white.lighter};
-  opacity: 0;
-  position: absolute;
-  bottom: 0;
-  width: 100%;
 
-  h4 {
-    text-align: center;
-    font-size: 18px;
-  }
-`;
 const Overlay = styled(motion.div)`
   position: fixed;
   top: 0;
@@ -87,13 +104,13 @@ const Overlay = styled(motion.div)`
   opacity: 0;
 `;
 
-const BigMovie = styled(motion.div)`
+const BigTv = styled(motion.div)`
   position: absolute;
-  width: 40vw;
-  height: 80vh;
+  width: 80vw;
   left: 0;
   right: 0;
   margin: 0 auto;
+  padding-bottom: 30px;
   overflow: hidden;
   border-radius: 15px;
   background-color: ${(props) => props.theme.black.lighter};
@@ -107,15 +124,51 @@ const BigCover = styled.div`
 
 const BigTitle = styled.h2`
   color: ${(props) => props.theme.white.lighter};
-  padding: 10px;
+  padding: 0 25px;
   font-size: 36px;
   position: relative;
-  top: -60px;
+  top: -100px;
 `;
+const BigBox = styled.div`
+  display: flex;
+  align-items : center;
+  margin-left : 25px;
+  margin-bottom : 10px;
+  .hd {
+    color: ${(props) => props.theme.white.lighter};
+    border: 0.8px solid ${(props) => props.theme.white.lighter};
+    border-radius: 5px;
+    padding: 2px 5px ;
+    font-size: 8px;
+    font-weight: 500;
+    margin-left: 5px;
+  }
+  .genre {
+      &::after {
+        content: "•";
+      }
+      &:last-child {
+        &::after {
+          content: "";
+        }
+      }
+`;
+
+const BigPlayBtn = styled.button`
+  border-radius: 5px;
+  border: none;
+  padding: 8px 20px 5px 20px;
+  font-size: 16px;
+  background-color: ${(props) => props.theme.white.lighter};
+  cursor: pointer;
+  .icon {
+    margin-right: 5px;
+  }
+`;
+
 const BigOverview = styled.p`
-  padding: 20px;
-  position: relative;
-  top: -80px;
+  width: 60%;
+  padding: 5px 25px;
   color: ${(props) => props.theme.white.lighter};
 `;
 // Animation
@@ -131,107 +184,231 @@ const rowVariants = {
   },
 };
 
-const boxVariants = {
-  normal: {
-    scale: 1,
-  },
-  hover: {
-    zIndex: 99,
-    scale: 1.5,
-    y: -50,
-    transition: {
-      delay: 0.5,
-      duration: 0.3,
-      type: "tween",
-    },
-  },
-};
-
-const infoVariants = {
-  hover: {
-    opacity: 1,
-    transition: {
-      delay: 0.5,
-      duration: 0.3,
-      type: "tween",
-    },
-  },
-};
+type SectionType = "popular" | "nowPlaying" | "topRated";
 
 // 한번에 보여주고 싶은 영화의 수 = 6
 const offset = 6;
 
 const Tv = () => {
-  // 선언
   const history = useNavigate();
   const bigTvMatch: PathMatch<string> | null = useMatch("/tv/:tvId");
   const { scrollY } = useScroll();
-  // console.log(bigMovieMatch);
-  const { data, isLoading } = useQuery<IGetTvResult>(["tv", "topRated"], getTv);
+  const { data: topRatedData, isLoading: isTopRatedLoading } =
+    useQuery<IGetTvResult>(["tv", "topRated"], getTv);
+  const { data: popularData, isLoading: isPopularLoading } =
+    useQuery<IGetTvResult>(["tv", "popular"], getPopularTv);
+  const { data: nowPlayingData, isLoading: isNowPlayingLoading } =
+    useQuery<IGetTvResult>(["tv", "nowPlaying"], getAirTv);
+  const { data: genreData } = useQuery<IGetGenre>(
+    ["tvs", "Genre"],
+    getGenreMovies
+  );
 
-  const [index, setIndex] = useState(0);
+  const [popularIndex, setPopularIndex] = useState(0);
+  const [nowPlayingIndex, setNowPlayingIndex] = useState(0);
+  const [topRatedIndex, setTopRatedIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
-  const increaseIndex = () => {
-    if (data) {
+
+  const [plus, setPlus] = useState(false);
+  const onPlusClick = () => {
+    setPlus(!plus);
+  };
+  const [thumb, setThumb] = useState(false);
+  const onThumbClick = () => {
+    setThumb(!thumb);
+  };
+
+  const [randomIndex, setRandomIndex] = useState(0);
+
+  useEffect(() => {
+    const randomIndex = Math.floor(
+      Math.random() * (popularData?.results.length || 0)
+    );
+    setRandomIndex(randomIndex);
+  }, [popularData]);
+
+  const increaseIndex = (section: SectionType) => {
+    if (section === "popular" && nowPlayingData) {
       if (leaving) return;
       toggleLeaving();
-      const totalMovies = data.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
-      setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
+      const totaltvs = nowPlayingData.results.length - 1;
+      const maxIndex = Math.floor(totaltvs / offset) - 1;
+      setPopularIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
+    } else if (section === "nowPlaying" && nowPlayingData) {
+      if (leaving) return;
+      toggleLeaving();
+      const totaltvs = nowPlayingData.results.length - 1;
+      const maxIndex = Math.floor(totaltvs / offset) - 1;
+      setNowPlayingIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
+    } else if (section === "topRated" && topRatedData) {
+      if (leaving) return;
+      toggleLeaving();
+      const totaltvs = topRatedData.results.length - 1;
+      const maxIndex = Math.floor(totaltvs / offset) - 1;
+      setTopRatedIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
     }
   };
   const toggleLeaving = () => setLeaving((prev) => !prev);
   const onBoxClicked = (tvId: number) => {
-    history(`/tv/${tvId}`);
+    history(`/tvs/${tvId}`);
   };
-  const onOverlayClick = () => history("/tv");
-  const clickedTv =
-    bigTvMatch?.params.tvId &&
-    data?.results.find((tv) => tv.id + "" === bigTvMatch.params.tvId);
+
+  let clickedTv = null;
+
+  let clickedId: number | null = null;
+
+  const onOverlayClick = () => history(`/`);
+  if (bigTvMatch) {
+    const tvId = bigTvMatch.params.tvId;
+    if (popularData) {
+      clickedTv = popularData.results.find((tv) => tv.id.toString() === tvId);
+    } else if (nowPlayingData) {
+      clickedTv = nowPlayingData.results.find(
+        (tv) => tv.id.toString() === tvId
+      );
+    } else if (topRatedData) {
+      clickedTv = topRatedData.results.find((tv) => tv.id.toString() === tvId);
+    }
+  }
+  console.log(clickedTv);
+
   return (
     <Wrapper>
-      {isLoading ? (
+      {isPopularLoading || isNowPlayingLoading || isTopRatedLoading ? (
         <Loader>Loading...</Loader>
       ) : (
         <>
           <Banner
-            onClick={increaseIndex}
-            bgPhoto={makeImagePath(data?.results[0].backdrop_path || "")}
+            bgPhoto={makeImagePath(
+              popularData?.results[randomIndex]?.backdrop_path || ""
+            )}
           >
-            <Title>{data?.results[0].name}</Title>
-            <OverView>{data?.results[0].overview}</OverView>
+            <Title>{popularData?.results[randomIndex]?.name}</Title>
+            <OverView>{popularData?.results[randomIndex]?.overview}</OverView>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <BigPlayBtn>
+                <FontAwesomeIcon icon={faPlay} className="icon" />
+                재생
+              </BigPlayBtn>
+              <BigPlayBtn>
+                <FontAwesomeIcon
+                  className="icon"
+                  color="black"
+                  icon={faCircleExclamation}
+                />
+                상세보기
+              </BigPlayBtn>
+            </div>
           </Banner>
-          <Slider>
-            <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
-              <Row
-                key={index}
-                variants={rowVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={{ type: "tween", duration: 1 }}
-              >
-                {data?.results
-                  .slice(1)
-                  .slice(offset * index, offset * index + offset)
-                  .map((tv) => (
-                    <Box
-                      layoutId={tv.id + ""}
-                      key={tv.id}
-                      bgPhoto={makeImagePath(tv.backdrop_path, "w500")}
-                      variants={boxVariants}
-                      initial="normal"
-                      whileHover="hover"
-                      onClick={() => onBoxClicked(tv.id)}
-                    >
-                      <Info variants={infoVariants}>
-                        <h4>{tv.name}</h4>
-                      </Info>
-                    </Box>
-                  ))}
-              </Row>
-            </AnimatePresence>
-          </Slider>
+          <SliderBox>
+            <SliderTitle onClick={() => increaseIndex("popular")}>
+              인기있는 영화
+            </SliderTitle>
+            <Slider>
+              <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
+                <Row
+                  variants={rowVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ type: "tween", duration: 1 }}
+                  key={popularIndex}
+                >
+                  {popularData?.results
+                    .slice(1)
+                    .slice(
+                      offset * popularIndex,
+                      offset * popularIndex + offset
+                    )
+                    .map((tv) => (
+                      <TvBox
+                        key={tv.id}
+                        tv={tv}
+                        genreData={genreData}
+                        plus={plus}
+                        thumb={thumb}
+                        onPlusClick={onPlusClick}
+                        onThumbClick={onThumbClick}
+                        onBoxClicked={onBoxClicked}
+                      />
+                    ))}
+                </Row>
+              </AnimatePresence>
+            </Slider>
+          </SliderBox>
+          <SliderBox>
+            <SliderTitle onClick={() => increaseIndex("nowPlaying")}>
+              현재 상영작
+            </SliderTitle>
+            <Slider>
+              <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
+                <Row
+                  variants={rowVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ type: "tween", duration: 1 }}
+                  key={nowPlayingIndex}
+                >
+                  {nowPlayingData?.results
+                    .slice(1)
+                    .slice(
+                      offset * nowPlayingIndex,
+                      offset * nowPlayingIndex + offset
+                    )
+                    .map((tv) => (
+                      <TvBox
+                        key={tv.id}
+                        tv={tv}
+                        genreData={genreData}
+                        plus={plus}
+                        thumb={thumb}
+                        onPlusClick={onPlusClick}
+                        onThumbClick={onThumbClick}
+                        onBoxClicked={onBoxClicked}
+                      />
+                    ))}
+                </Row>
+              </AnimatePresence>
+            </Slider>
+          </SliderBox>
+          <SliderBox>
+            <SliderTitle onClick={() => increaseIndex("topRated")}>
+              Top 10
+            </SliderTitle>
+            <Slider>
+              <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
+                <Row
+                  variants={rowVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ type: "tween", duration: 1 }}
+                  key={topRatedIndex}
+                >
+                  {topRatedData?.results
+                    .slice(1)
+                    .slice(
+                      offset * topRatedIndex,
+                      offset * topRatedIndex + offset
+                    )
+                    .map((tv) => (
+                      <TvBox
+                        key={tv.id}
+                        tv={tv}
+                        genreData={genreData}
+                        plus={plus}
+                        thumb={thumb}
+                        onPlusClick={onPlusClick}
+                        onThumbClick={onThumbClick}
+                        onBoxClicked={onBoxClicked}
+                      />
+                    ))}
+                </Row>
+              </AnimatePresence>
+            </Slider>
+          </SliderBox>
+
           <AnimatePresence>
             {bigTvMatch ? (
               <>
@@ -240,7 +417,7 @@ const Tv = () => {
                   exit={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 />
-                <BigMovie
+                <BigTv
                   layoutId={bigTvMatch.params.tvId}
                   style={{ top: scrollY.get() + 100 }}
                 >
@@ -254,11 +431,79 @@ const Tv = () => {
                           )})`,
                         }}
                       />
-                      <BigTitle>{clickedTv.name}</BigTitle>
+
+                      <BigTitle>{clickedTv.title}</BigTitle>
+                      <BigBox style={{ position: "absolute", top: "300px" }}>
+                        <BigPlayBtn style={{ margin: "0 10px 0 0" }}>
+                          ▶️ 재생
+                        </BigPlayBtn>
+                        <InfoBtn
+                          onClick={onPlusClick}
+                          style={{
+                            width: "30px",
+                            height: "30px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          {plus ? (
+                            <FontAwesomeIcon color="white" icon={faCheck} />
+                          ) : (
+                            <FontAwesomeIcon color="white" icon={faPlus} />
+                          )}
+                        </InfoBtn>
+                        <InfoBtn
+                          onClick={onThumbClick}
+                          style={{
+                            width: "30px",
+                            height: "30px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          {thumb ? (
+                            <FontAwesomeIcon color="white" icon={faThumbsUp} />
+                          ) : (
+                            <FontAwesomeIcon
+                              color="rgba(255,255,255,0.5)"
+                              icon={faThumbsUp}
+                            />
+                          )}
+                        </InfoBtn>
+                      </BigBox>
+                      <BigBox>
+                        <p style={{ margin: "0 5px 0 0" }}>
+                          {clickedTv.adult ? "18세" : "15세 이상"}
+                        </p>
+                        <p style={{ fontWeight: "bold" }}>
+                          {clickedTv.release_date?.slice(0, 4)}
+                        </p>
+                        <div className="hd">HD</div>
+                      </BigBox>
+                      <BigBox>
+                        {clickedTv.genre_ids?.map((id) => (
+                          <span className="genre" key={id}>
+                            {
+                              genreData?.genres.find((item) => item.id === id)
+                                ?.name
+                            }
+                          </span>
+                        ))}
+                      </BigBox>
+
                       <BigOverview>{clickedTv.overview}</BigOverview>
+                      {/* <BigBox>
+                        {characterData?.cast &&
+                          clickedId !== null &&
+                          characterData.cast
+                            .filter((character) => character.id === clickedId)
+                            .map((character) => (
+                              <span key={character.id}>
+                                {character.original_name}
+                              </span>
+                            ))}
+                      </BigBox> */}
                     </>
                   )}
-                </BigMovie>
+                </BigTv>
               </>
             ) : null}
           </AnimatePresence>

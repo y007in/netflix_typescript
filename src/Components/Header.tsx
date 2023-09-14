@@ -81,12 +81,17 @@ const Input = styled(motion.input)`
   position: absolute;
   right: 0px;
   padding: 5px 10px;
-  padding-left: 40px;
   z-index: -1;
   color: white;
   font-size: 16px;
   background-color: transparent;
+  outline: none;
   border: 1px solid ${(props) => props.theme.white.lighter};
+  border-radius: 5px;
+  &::placeholder {
+    color: ${(props) => props.theme.white.lighter};
+    font-size: 14px;
+  }
 `;
 
 const logoVariants = {
@@ -180,7 +185,7 @@ function Header() {
         <Search onSubmit={handleSubmit(onValid)}>
           <motion.svg
             onClick={toggleSearch}
-            animate={{ x: searchOpen ? -215 : 0 }}
+            animate={{ x: searchOpen ? -200 : 0 }}
             transition={{ ease: "linear" }}
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -197,7 +202,7 @@ function Header() {
             initial={{ scaleX: 0 }}
             animate={inputAnimation}
             transition={{ ease: "linear" }}
-            placeholder="Search for movie or tv show..."
+            placeholder="제목"
           />
         </Search>
       </Col>
