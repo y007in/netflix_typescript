@@ -9,7 +9,6 @@ import {
   faPlay,
   faThumbsUp,
   faCheck,
-  faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { makeImagePath } from "../utill";
 import { IGenre, IMovieTv } from "../api";

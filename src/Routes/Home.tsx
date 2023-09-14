@@ -29,7 +29,7 @@ import Slider from "../Components/Slider";
 
 const Wrapper = styled.div`
   background: #000;
-  height: 200vh;
+  height: 100vh;
 `;
 const Loader = styled.div`
   height: 20vh;
@@ -38,13 +38,18 @@ const Loader = styled.div`
   align-items: center;
 `;
 const Banner = styled.div<{ bgPhoto: string }>`
-  height: 100vh;
+  height: 80vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 60px;
-  background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
+  background-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 1) 80%
+    ),
     url(${(props) => props.bgPhoto});
+
   background-size: cover;
 `;
 const Title = styled.h1`
@@ -64,22 +69,15 @@ const SliderBox = styled.div`
   top: -100px;
   display: flex;
   flex-direction: column;
-  padding: 0 50px;
 `;
 
 const SliderTitle = styled.h1`
   color: ${(props) => props.theme.white.lighter};
   font-size: 28px;
   font-weight: bold;
+  padding: 0 50px;
 `;
 
-const Row = styled(motion.div)`
-  display: grid;
-  gap: 5px;
-  grid-template-columns: repeat(6, 1fr);
-  position: absolute;
-  width: 100%;
-`;
 const InfoBtn = styled.button`
   display: flex;
   justify-content: center;
@@ -117,6 +115,7 @@ const BigMovie = styled(motion.div)`
   overflow: hidden;
   border-radius: 15px;
   background-color: ${(props) => props.theme.black.lighter};
+  z-index: 99999;
 `;
 const BigCover = styled.div`
   width: 100%;
@@ -174,20 +173,6 @@ const BigOverview = styled.p`
   padding: 5px 25px;
   color: ${(props) => props.theme.white.lighter};
 `;
-// Animation
-const rowVariants = {
-  hidden: {
-    x: window.innerWidth + 5,
-  },
-  visible: {
-    x: 0,
-  },
-  exit: {
-    x: -window.innerWidth - 5,
-  },
-};
-
-type SectionType = "popular" | "nowPlaying" | "topRated";
 
 const Home = () => {
   const history = useNavigate();
@@ -212,11 +197,6 @@ const Home = () => {
   //   getCharacterMovies
   // );
 
-  const [popularIndex, setPopularIndex] = useState(0);
-  const [nowPlayingIndex, setNowPlayingIndex] = useState(0);
-  const [topRatedIndex, setTopRatedIndex] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-
   const [plus, setPlus] = useState(false);
   const onPlusClick = () => {
     setPlus(!plus);
@@ -234,8 +214,6 @@ const Home = () => {
     );
     setRandomIndex(randomIndex);
   }, [popularData]);
-
-  const offset = 6;
 
   let clickedMovie = null;
 
@@ -256,7 +234,6 @@ const Home = () => {
       );
     }
   }
-  console.log(clickedMovie);
 
   return (
     <Wrapper>

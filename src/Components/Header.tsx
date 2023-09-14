@@ -122,7 +122,7 @@ interface IForm {
 function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const homeMatch = useMatch("/");
-  const tvMatch = useMatch("/tv");
+  const searchMatch = useMatch("/search");
   const inputAnimation = useAnimation();
   const navAnimation = useAnimation();
   const { scrollY } = useScroll();
@@ -172,40 +172,16 @@ function Header() {
         </Logo>
         <Items>
           <Item>
-            <Link to="/">Home {homeMatch && <Circle layoutId="circle" />}</Link>
+            <Link to="/">홈 {homeMatch && <Circle layoutId="circle" />}</Link>
           </Item>
           <Item>
-            <Link to="/tv">
-              Tv Shows {tvMatch && <Circle layoutId="circle" />}
+            <Link to="/search">
+              검색 {searchMatch && <Circle layoutId="circle" />}
             </Link>
           </Item>
         </Items>
       </Col>
-      <Col>
-        <Search onSubmit={handleSubmit(onValid)}>
-          <motion.svg
-            onClick={toggleSearch}
-            animate={{ x: searchOpen ? -200 : 0 }}
-            transition={{ ease: "linear" }}
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-              clipRule="evenodd"
-            ></path>
-          </motion.svg>
-          <Input
-            {...register("keyword", { required: true, minLength: 2 })}
-            initial={{ scaleX: 0 }}
-            animate={inputAnimation}
-            transition={{ ease: "linear" }}
-            placeholder="제목"
-          />
-        </Search>
-      </Col>
+      <Col></Col>
     </Nav>
   );
 }
