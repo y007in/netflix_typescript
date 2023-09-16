@@ -12,7 +12,8 @@ export interface IMovieTv {
   adult: string;
   release_date?: string;
   genre_ids?: number[];
-  // original_name?: string;
+  original_name: string;
+  name: string;
 }
 export interface ICharacter {
   id: number;
@@ -44,7 +45,7 @@ export interface IGetCharacter {
 }
 export interface IGetTrailer {
   id: number;
-  results: string[];
+  results: IMovieTv[];
 }
 export interface IGetTvResult {
   page: number;
@@ -64,11 +65,6 @@ export function getMovies() {
     `${BASE_PATH}/movie/now_playing?api_key=${API_KEY}&language=ko-KR`
   ).then((response) => response.json());
 }
-export function getRateMovies() {
-  return fetch(
-    `${BASE_PATH}/movie/top_rated?api_key=${API_KEY}&language=ko-KR`
-  ).then((response) => response.json());
-}
 
 export function getGenreMovies() {
   return fetch(
@@ -76,13 +72,20 @@ export function getGenreMovies() {
   ).then((response) => response.json());
 }
 
-export function getCharacterMovies() {
+export function getCharacterMovies(movieId: number) {
   return fetch(
-    `${BASE_PATH}//movie/{movie_id}/credits?api_key=${API_KEY}&language=ko-KR`
+    `${BASE_PATH}/movie/${movieId}/credits?api_key=${API_KEY}&language=ko-KR`
   ).then((response) => response.json());
 }
-export function getTrailerMovies() {
+
+// export function getTrailerMovies(movieId: number) {
+//   return fetch(
+//     `${BASE_PATH}//movie/{movieId}//videos?api_key=${API_KEY}&language=ko-KR`
+//   ).then((response) => response.json());
+// }
+
+export function getTv() {
   return fetch(
-    `${BASE_PATH}//movie/{movie_id}//videos?api_key=${API_KEY}&language=ko-KR`
+    `${BASE_PATH}/tv/top_rated?api_key=${API_KEY}&language=ko-KR`
   ).then((response) => response.json());
 }

@@ -34,6 +34,7 @@ const Btn = styled.button`
   outline: none;
   background-color: rgba(0, 0, 0, 1);
   font-size: 1.6vw;
+  cursor: pointer;
   &:first-child {
     left: 0;
   }

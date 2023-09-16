@@ -12,9 +12,9 @@ import { motion, AnimatePresence, useScroll } from "framer-motion";
 import {
   getPopularMovies,
   getMovies,
-  getRateMovies,
   getGenreMovies,
-  // getCharacterMovies,
+  getTv,
+  getCharacterMovies,
   // getTrailerMovies,
   IGetMoviesResult,
   IGetGenre,
@@ -183,7 +183,7 @@ const Home = () => {
   const { data: nowPlayingData, isLoading: isNowPlayingLoading } =
     useQuery<IGetMoviesResult>(["movies", "nowPlaying"], getMovies);
   const { data: topRatedData, isLoading: isTopRatedLoading } =
-    useQuery<IGetMoviesResult>(["movies", "TopRate"], getRateMovies);
+    useQuery<IGetMoviesResult>(["tvs", "TopRated"], getTv);
   const { data: genreData } = useQuery<IGetGenre>(
     ["movies", "Genre"],
     getGenreMovies
@@ -193,8 +193,8 @@ const Home = () => {
   //   getTrailerMovies
   // );
   // const { data: characterData } = useQuery<IGetCharacter>(
-  //   ["movies", "Trailer"],
-  //   getCharacterMovies
+  //   ["movies", "character"],
+  //   () => getCharacterMovies()
   // );
 
   const [plus, setPlus] = useState(false);
@@ -205,7 +205,7 @@ const Home = () => {
   const onThumbClick = () => {
     setThumb(!thumb);
   };
-
+  const [trailer, setTrailer] = useState<IGetTrailer | null>(null);
   const [randomIndex, setRandomIndex] = useState(0);
 
   useEffect(() => {
@@ -234,6 +234,8 @@ const Home = () => {
       );
     }
   }
+
+  const onClickPlay = () => {};
 
   return (
     <Wrapper>
@@ -264,7 +266,7 @@ const Home = () => {
             </div>
           </Banner>
           <SliderBox>
-            <SliderTitle>인기있는 영화</SliderTitle>
+            <SliderTitle>지금 뜨는 콘텐츠</SliderTitle>
             <Slider
               movie={popularData?.results || []}
               genreData={genreData}
@@ -280,14 +282,14 @@ const Home = () => {
             />
           </SliderBox>
           <SliderBox>
-            <SliderTitle>Top 10</SliderTitle>
+            <SliderTitle>Top 10 시리즈</SliderTitle>
             <Slider
               movie={topRatedData?.results || []}
               genreData={genreData}
               movieListType="topRated"
             />
           </SliderBox>
-
+          ㅋ
           <AnimatePresence>
             {bigMovieMatch ? (
               <>
@@ -368,18 +370,13 @@ const Home = () => {
                         ))}
                       </BigBox>
 
-                      <BigOverview>{clickedMovie.overview}</BigOverview>
-                      {/* <BigBox>
-                        {characterData?.cast &&
-                          clickedId !== null &&
-                          characterData.cast
-                            .filter((character) => character.id === clickedId)
-                            .map((character) => (
-                              <span key={character.id}>
-                                {character.original_name}
-                              </span>
-                            ))}
-                      </BigBox> */}
+                      {/* <BigOverview>{clickedMovie.overview}</BigOverview>
+                      {characterData?.cast &&
+                        characterData.cast.map((character) => (
+                          <span key={character.id}>
+                            {character.original_name}
+                          </span>
+                        ))}*/}
                     </>
                   )}
                 </BigMovie>

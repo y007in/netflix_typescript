@@ -42,8 +42,8 @@ const Info = styled(motion.div)`
   height: 100%;
   h4 {
     position: absolute;
-    top: 40%;
-    left: 10px;
+    top: 43%;
+    left: 12px;
     text-align: center;
     font-size: 16px;
     font-weight: bold;
@@ -52,7 +52,7 @@ const Info = styled(motion.div)`
     position: absolute;
     bottom: 0;
     width: 100%;
-    padding: 8px 10px;
+    padding: 4px 12px;
     background-color: ${(props) => props.theme.black.lighter};
     .genre {
       font-size: 12px;
@@ -69,19 +69,22 @@ const Info = styled(motion.div)`
 `;
 const InfoBox = styled.div`
   display: flex;
+  align-items: center;
   padding: 5px 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  .hd {
+  font-weight: bold;
+  .hd,
+  .adult {
     color: ${(props) => props.theme.white.lighter};
     border: 1px solid ${(props) => props.theme.white.lighter};
     border-radius: 5px;
-    padding: 1px 3px;
+    padding: 2px 5px;
     font-size: 8px;
-    font-weight: bold;
-    margin-left: 5px;
+    // font-weight: bold;
+    margin-right: 5px;
   }
 `;
 const InfoBtn = styled.button`
@@ -107,9 +110,10 @@ const boxVariants = {
     scale: 1,
   },
   hover: {
+    scale: 1.05,
     zIndex: 99,
-    scale: 1.5,
-    y: -50,
+    border: "2px solid white",
+    // y: -50,
     transition: {
       // delay: 0.5,
       duration: 0.3,
@@ -162,7 +166,9 @@ const MovieBox = ({
       bgPhoto={makeImagePath(movie.backdrop_path, "w500")}
     >
       <Info variants={infoVariants}>
-        <h4>{movie.title}</h4>
+        <h4>
+          {movie.title} {movie.name}
+        </h4>
         <div className="info_content">
           <InfoBox>
             <InfoBtn>
@@ -187,7 +193,8 @@ const MovieBox = ({
             </InfoBtn>
           </InfoBox>
           <InfoBox>
-            {movie.adult ? "18+" : "15+"}
+            <div className="adult">{movie.adult ? "18+" : "15+"}</div>
+
             <div className="hd">HD</div>
           </InfoBox>
           <InfoBox>
