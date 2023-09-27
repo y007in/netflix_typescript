@@ -72,7 +72,7 @@ export function getGenreMovies() {
   ).then((response) => response.json());
 }
 
-export function getCharacterMovies(movieId: number) {
+export function getCharacterMovies(movieId: string) {
   return fetch(
     `${BASE_PATH}/movie/${movieId}/credits?api_key=${API_KEY}&language=ko-KR`
   ).then((response) => response.json());

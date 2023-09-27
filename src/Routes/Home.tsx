@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -16,6 +16,7 @@ import {
   getTv,
   getCharacterMovies,
   // getTrailerMovies,
+  IMovieTv,
   IGetMoviesResult,
   IGetGenre,
   IGetTrailer,
@@ -23,7 +24,7 @@ import {
 } from "../api";
 import { makeImagePath } from "../utill";
 import styled from "styled-components";
-import { useNavigate, useMatch, PathMatch } from "react-router-dom";
+import { useNavigate, useMatch, PathMatch, useParams } from "react-router-dom";
 import MovieBox from "../Components/MovieBox";
 import Slider from "../Components/Slider";
 
@@ -108,6 +109,7 @@ const Overlay = styled(motion.div)`
 const BigMovie = styled(motion.div)`
   position: absolute;
   width: 80vw;
+  height: 90vh;
   left: 0;
   right: 0;
   margin: 0 auto;
@@ -131,11 +133,13 @@ const BigTitle = styled.h2`
   position: relative;
   top: -100px;
 `;
+
 const BigBox = styled.div`
   display: flex;
-  align-items : center;
+  // align-items : center;
   margin-left : 25px;
   margin-bottom : 10px;
+  
   .hd {
     color: ${(props) => props.theme.white.lighter};
     border: 0.8px solid ${(props) => props.theme.white.lighter};
@@ -154,6 +158,19 @@ const BigBox = styled.div`
           content: "";
         }
       }
+  
+  }
+  .character{
+  margin-right : 10px;
+  &::after{
+    content : ",";
+  }
+  &:last-child {
+        &::after {
+          content: "";
+        }
+      }
+
 `;
 
 const BigPlayBtn = styled.button`
@@ -169,15 +186,24 @@ const BigPlayBtn = styled.button`
 `;
 
 const BigOverview = styled.p`
-  width: 60%;
+  width: 100%;
   padding: 5px 25px;
   color: ${(props) => props.theme.white.lighter};
+`;
+
+const MoreBtn = styled.button`
+  border: none;
+  background-color: transparent;
+  color: ${(props) => props.theme.white.lighter};
+  text-decoration: underline;
 `;
 
 const Home = () => {
   const history = useNavigate();
   const bigMovieMatch: PathMatch<string> | null = useMatch("/movies/:movieId");
+  const { movieId = "" } = useParams();
   const { scrollY } = useScroll();
+
   const { data: popularData, isLoading: isPopularLoading } =
     useQuery<IGetMoviesResult>(["movies", "popular"], getPopularMovies);
   const { data: nowPlayingData, isLoading: isNowPlayingLoading } =
@@ -189,13 +215,13 @@ const Home = () => {
     getGenreMovies
   );
   // const { data: trailerData } = useQuery<IGetTrailer>(
-  //   ["movies", "Trailer"],
-  //   getTrailerMovies
+  //   ["movies", "Trailer", movieId],
+  //   () => getTrailerMovies(movieId)
   // );
-  // const { data: characterData } = useQuery<IGetCharacter>(
-  //   ["movies", "character"],
-  //   () => getCharacterMovies()
-  // );
+  const { data: characterData } = useQuery<IGetCharacter>(
+    ["movies", "character", movieId],
+    () => getCharacterMovies(movieId)
+  );
 
   const [plus, setPlus] = useState(false);
   const onPlusClick = () => {
@@ -205,8 +231,12 @@ const Home = () => {
   const onThumbClick = () => {
     setThumb(!thumb);
   };
-  const [trailer, setTrailer] = useState<IGetTrailer | null>(null);
+
   const [randomIndex, setRandomIndex] = useState(0);
+  const [moreBtn, setMoreBtn] = useState(false);
+  const onMoreClick = () => {
+    setMoreBtn(!moreBtn);
+  };
 
   useEffect(() => {
     const randomIndex = Math.floor(
@@ -218,21 +248,18 @@ const Home = () => {
   let clickedMovie = null;
 
   const onOverlayClick = () => history(`/`);
+
   if (bigMovieMatch) {
     const movieId = bigMovieMatch.params.movieId;
-    if (popularData) {
-      clickedMovie = popularData.results.find(
-        (movie) => movie.id.toString() === movieId
-      );
-    } else if (nowPlayingData) {
-      clickedMovie = nowPlayingData.results.find(
-        (movie) => movie.id.toString() === movieId
-      );
-    } else if (topRatedData) {
-      clickedMovie = topRatedData.results.find(
-        (movie) => movie.id.toString() === movieId
-      );
-    }
+    const movieList: IMovieTv[] =
+      popularData?.results && nowPlayingData?.results && topRatedData?.results
+        ? [
+            ...popularData?.results,
+            ...nowPlayingData?.results,
+            ...topRatedData?.results,
+          ]
+        : [];
+    clickedMovie = movieList.find((movie) => movie.id.toString() === movieId);
   }
 
   const onClickPlay = () => {};
@@ -289,102 +316,130 @@ const Home = () => {
               movieListType="topRated"
             />
           </SliderBox>
-          ㅋ
-          <AnimatePresence>
-            {bigMovieMatch ? (
-              <>
-                <Overlay
-                  onClick={onOverlayClick}
-                  exit={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                />
-                <BigMovie
-                  layoutId={bigMovieMatch.params.movieId}
-                  style={{ top: scrollY.get() + 100 }}
-                >
-                  {clickedMovie && (
-                    <>
-                      <BigCover
-                        style={{
-                          backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
-                            clickedMovie.backdrop_path,
-                            "w500"
-                          )})`,
-                        }}
-                      />
-
-                      <BigTitle>{clickedMovie.title}</BigTitle>
-                      <BigBox style={{ position: "absolute", top: "300px" }}>
-                        <BigPlayBtn style={{ margin: "0 10px 0 0" }}>
-                          ▶️ 재생
-                        </BigPlayBtn>
-                        <InfoBtn
-                          onClick={onPlusClick}
-                          style={{
-                            width: "30px",
-                            height: "30px",
-                            fontSize: "14px",
-                          }}
-                        >
-                          {plus ? (
-                            <FontAwesomeIcon color="white" icon={faCheck} />
-                          ) : (
-                            <FontAwesomeIcon color="white" icon={faPlus} />
-                          )}
-                        </InfoBtn>
-                        <InfoBtn
-                          onClick={onThumbClick}
-                          style={{
-                            width: "30px",
-                            height: "30px",
-                            fontSize: "14px",
-                          }}
-                        >
-                          {thumb ? (
-                            <FontAwesomeIcon color="white" icon={faThumbsUp} />
-                          ) : (
-                            <FontAwesomeIcon
-                              color="rgba(255,255,255,0.5)"
-                              icon={faThumbsUp}
-                            />
-                          )}
-                        </InfoBtn>
-                      </BigBox>
-                      <BigBox>
-                        <p style={{ margin: "0 5px 0 0" }}>
-                          {clickedMovie.adult ? "18세" : "15세 이상"}
-                        </p>
-                        <p style={{ fontWeight: "bold" }}>
-                          {clickedMovie.release_date?.slice(0, 4)}
-                        </p>
-                        <div className="hd">HD</div>
-                      </BigBox>
-                      <BigBox>
-                        {clickedMovie.genre_ids?.map((id) => (
-                          <span className="genre" key={id}>
-                            {
-                              genreData?.genres.find((item) => item.id === id)
-                                ?.name
-                            }
-                          </span>
-                        ))}
-                      </BigBox>
-
-                      {/* <BigOverview>{clickedMovie.overview}</BigOverview>
-                      {characterData?.cast &&
-                        characterData.cast.map((character) => (
-                          <span key={character.id}>
-                            {character.original_name}
-                          </span>
-                        ))}*/}
-                    </>
-                  )}
-                </BigMovie>
-              </>
-            ) : null}
-          </AnimatePresence>
         </>
       )}
+      <AnimatePresence>
+        {bigMovieMatch ? (
+          <>
+            <Overlay
+              onClick={onOverlayClick}
+              exit={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            />
+            <BigMovie
+              layoutId={bigMovieMatch.params.movieId}
+              style={{ top: scrollY.get() + 100 }}
+            >
+              {clickedMovie && (
+                <>
+                  <BigCover
+                    style={{
+                      backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
+                        clickedMovie.backdrop_path,
+                        "w500"
+                      )})`,
+                    }}
+                  />
+
+                  <BigTitle>{clickedMovie.title}</BigTitle>
+                  <BigBox style={{ position: "absolute", top: "300px" }}>
+                    <BigPlayBtn style={{ margin: "0 10px 0 0" }}>
+                      ▶️ 재생
+                    </BigPlayBtn>
+                    <InfoBtn
+                      onClick={onPlusClick}
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {plus ? (
+                        <FontAwesomeIcon color="white" icon={faCheck} />
+                      ) : (
+                        <FontAwesomeIcon color="white" icon={faPlus} />
+                      )}
+                    </InfoBtn>
+                    <InfoBtn
+                      onClick={onThumbClick}
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {thumb ? (
+                        <FontAwesomeIcon color="white" icon={faThumbsUp} />
+                      ) : (
+                        <FontAwesomeIcon
+                          color="rgba(255,255,255,0.5)"
+                          icon={faThumbsUp}
+                        />
+                      )}
+                    </InfoBtn>
+                  </BigBox>
+
+                  <BigBox>
+                    <p style={{ margin: "0 5px 0 0" }}>
+                      {clickedMovie.adult ? "18세" : "15세 이상"}
+                    </p>
+                    <p style={{ fontWeight: "bold" }}>
+                      {clickedMovie.release_date?.slice(0, 4)}
+                    </p>
+                    <div className="hd">HD</div>
+                  </BigBox>
+                  <BigBox>
+                    {clickedMovie.genre_ids?.map((id) => (
+                      <span className="genre" key={id}>
+                        {genreData?.genres.find((item) => item.id === id)?.name}
+                      </span>
+                    ))}
+                  </BigBox>
+
+                  <BigOverview>{clickedMovie.overview}</BigOverview>
+
+                  <BigBox>
+                    <div style={{ flex: 1 }}>출연 : </div>
+                    <div
+                      className="characters"
+                      style={{ wordBreak: "keep-all", flex: 33 }}
+                    >
+                      {characterData?.cast &&
+                        characterData.cast.slice(0, 11).map((character) => (
+                          <span className="character" key={character.id}>
+                            {character.original_name}
+                          </span>
+                        ))}
+                      {moreBtn ? (
+                        <MoreBtn onClick={onMoreClick}>닫기</MoreBtn>
+                      ) : (
+                        <MoreBtn onClick={onMoreClick}>더보기</MoreBtn>
+                      )}
+                    </div>
+                  </BigBox>
+                  <BigBox>
+                    {moreBtn ? (
+                      <div
+                        className="characters"
+                        style={{ wordBreak: "keep-all", flex: 33 }}
+                      >
+                        {characterData?.cast &&
+                          characterData.cast
+                            .slice(11, characterData.cast.length)
+                            .map((character) => (
+                              <span className="character" key={character.id}>
+                                {character.original_name}
+                              </span>
+                            ))}
+                      </div>
+                    ) : null}
+                  </BigBox>
+                </>
+              )}
+            </BigMovie>
+          </>
+        ) : null}
+      </AnimatePresence>
     </Wrapper>
   );
 };

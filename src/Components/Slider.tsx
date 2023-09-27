@@ -77,9 +77,15 @@ interface SliderProps {
   movie: IMovieTv[];
   genreData: { genres: IGenre[] } | undefined;
   movieListType: string;
+  // onItemClick: (movieId: any) => void;
 }
 
-const Slider = ({ movie, genreData, movieListType }: SliderProps) => {
+const Slider = ({
+  movie,
+  genreData,
+  movieListType,
+}: // onItemClick,
+SliderProps) => {
   const history = useNavigate();
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
