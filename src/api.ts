@@ -14,6 +14,8 @@ export interface IMovieTv {
   genre_ids?: number[];
   original_name: string;
   name: string;
+
+  key: string;
 }
 export interface ICharacter {
   id: number;
@@ -78,11 +80,11 @@ export function getCharacterMovies(movieId: string) {
   ).then((response) => response.json());
 }
 
-// export function getTrailerMovies(movieId: number) {
-//   return fetch(
-//     `${BASE_PATH}//movie/{movieId}//videos?api_key=${API_KEY}&language=ko-KR`
-//   ).then((response) => response.json());
-// }
+export function getTrailerMovies(movieId: string) {
+  return fetch(
+    `${BASE_PATH}//movie/${movieId}/videos?api_key=${API_KEY}&language=ko-KR`
+  ).then((response) => response.json());
+}
 
 export function getTv() {
   return fetch(

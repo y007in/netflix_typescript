@@ -51,45 +51,28 @@ const Btn = styled.button`
 `;
 
 const rowVariants = {
-  hidden: {
-    x: window.innerWidth + 5,
-  },
+  entry: (back: boolean) => ({
+    x: back ? -window.innerWidth - 5 : window.innerWidth + 5,
+  }),
   visible: {
     x: 0,
   },
-  exit: {
-    x: -window.innerWidth - 5,
-  },
-};
-const rowVariantsReverse = {
-  hidden: {
-    x: -window.innerWidth - 5,
-  },
-  visible: {
-    x: 0,
-  },
-  exit: {
-    x: window.innerWidth + 5,
-  },
+  exit: (back: boolean) => ({
+    x: back ? window.innerWidth + 5 : -window.innerWidth - 5,
+  }),
 };
 
 interface SliderProps {
   movie: IMovieTv[];
   genreData: { genres: IGenre[] } | undefined;
   movieListType: string;
-  // onItemClick: (movieId: any) => void;
 }
 
-const Slider = ({
-  movie,
-  genreData,
-  movieListType,
-}: // onItemClick,
-SliderProps) => {
+const Slider = ({ movie, genreData, movieListType }: SliderProps) => {
+  const [back, setBack] = useState(false);
   const history = useNavigate();
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
-  const [reverseAnimation, setReverseAnimation] = useState(false);
 
   const [plus, setPlus] = useState(false);
   const onPlusClick = () => {
@@ -112,16 +95,16 @@ SliderProps) => {
     if (movie) {
       if (leaving) return;
       toggleLeaving();
+      setBack(false);
       setIndex((prev) => (prev === 0 ? maxIndex : prev - 1));
-      setReverseAnimation(true);
     }
   };
   const increaseIndex = () => {
     if (movie) {
       if (leaving) return;
       toggleLeaving();
+      setBack(true);
       setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
-      setReverseAnimation(false);
     }
   };
 
@@ -130,8 +113,9 @@ SliderProps) => {
       <Sliders>
         <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
           <Row
-            variants={reverseAnimation ? rowVariantsReverse : rowVariants}
-            initial="hidden"
+            custom={back}
+            variants={rowVariants}
+            initial="entry"
             animate="visible"
             exit="exit"
             transition={{ type: "tween", duration: 1 }}

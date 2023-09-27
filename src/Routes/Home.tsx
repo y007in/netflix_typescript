@@ -15,7 +15,7 @@ import {
   getGenreMovies,
   getTv,
   getCharacterMovies,
-  // getTrailerMovies,
+  getTrailerMovies,
   IMovieTv,
   IGetMoviesResult,
   IGetGenre,
@@ -25,7 +25,6 @@ import {
 import { makeImagePath } from "../utill";
 import styled from "styled-components";
 import { useNavigate, useMatch, PathMatch, useParams } from "react-router-dom";
-import MovieBox from "../Components/MovieBox";
 import Slider from "../Components/Slider";
 
 const Wrapper = styled.div`
@@ -108,13 +107,13 @@ const Overlay = styled(motion.div)`
 
 const BigMovie = styled(motion.div)`
   position: absolute;
-  width: 80vw;
-  height: 90vh;
+  width: 70vw;
+  height: 80vh;
   left: 0;
   right: 0;
   margin: 0 auto;
   padding-bottom: 30px;
-  overflow: hidden;
+  overflow: scroll;
   border-radius: 15px;
   background-color: ${(props) => props.theme.black.lighter};
   z-index: 99999;
@@ -128,7 +127,7 @@ const BigCover = styled.div`
 
 const BigTitle = styled.h2`
   color: ${(props) => props.theme.white.lighter};
-  padding: 0 25px;
+  padding: 0 30px;
   font-size: 36px;
   position: relative;
   top: -100px;
@@ -137,15 +136,16 @@ const BigTitle = styled.h2`
 const BigBox = styled.div`
   display: flex;
   // align-items : center;
-  margin-left : 25px;
+  padding : 0 30px;
   margin-bottom : 10px;
-  
+  font-size : 20px;
+
   .hd {
     color: ${(props) => props.theme.white.lighter};
     border: 0.8px solid ${(props) => props.theme.white.lighter};
     border-radius: 5px;
-    padding: 2px 5px ;
-    font-size: 8px;
+    padding: 2px 5px;
+    font-size: 16px;
     font-weight: 500;
     margin-left: 5px;
   }
@@ -187,8 +187,10 @@ const BigPlayBtn = styled.button`
 
 const BigOverview = styled.p`
   width: 100%;
-  padding: 5px 25px;
+  padding: 5px 30px;
   color: ${(props) => props.theme.white.lighter};
+  font-size: 20px;
+  line-height: 140%;
 `;
 
 const MoreBtn = styled.button`
@@ -214,10 +216,10 @@ const Home = () => {
     ["movies", "Genre"],
     getGenreMovies
   );
-  // const { data: trailerData } = useQuery<IGetTrailer>(
-  //   ["movies", "Trailer", movieId],
-  //   () => getTrailerMovies(movieId)
-  // );
+  const { data: trailerData } = useQuery<IGetTrailer>(
+    ["movies", "Trailer", movieId],
+    () => getTrailerMovies(movieId)
+  );
   const { data: characterData } = useQuery<IGetCharacter>(
     ["movies", "character", movieId],
     () => getCharacterMovies(movieId)
@@ -233,7 +235,7 @@ const Home = () => {
   };
 
   const [randomIndex, setRandomIndex] = useState(0);
-  const [moreBtn, setMoreBtn] = useState(false);
+  const [moreBtn, setMoreBtn] = useState(true);
   const onMoreClick = () => {
     setMoreBtn(!moreBtn);
   };
@@ -247,7 +249,10 @@ const Home = () => {
 
   let clickedMovie = null;
 
-  const onOverlayClick = () => history(`/`);
+  const onOverlayClick = () => {
+    history(`/`);
+    setMoreBtn(true);
+  };
 
   if (bigMovieMatch) {
     const movieId = bigMovieMatch.params.movieId;
@@ -261,9 +266,15 @@ const Home = () => {
         : [];
     clickedMovie = movieList.find((movie) => movie.id.toString() === movieId);
   }
-
-  const onClickPlay = () => {};
-
+  const onClickPlay = () => {
+    const trailerKey = trailerData?.results[0].key;
+    if (trailerKey) {
+      const youtubeURL = `https://www.youtube.com/watch?v=${trailerKey}`;
+      window.open(youtubeURL, "_blank");
+    } else {
+      alert("관련된 영상이 없습니다.");
+    }
+  };
   return (
     <Wrapper>
       {isPopularLoading || isNowPlayingLoading || isTopRatedLoading ? (
@@ -278,7 +289,7 @@ const Home = () => {
             <Title>{popularData?.results[randomIndex]?.title}</Title>
             <OverView>{popularData?.results[randomIndex]?.overview}</OverView>
             <div style={{ display: "flex", gap: "10px" }}>
-              <BigPlayBtn>
+              <BigPlayBtn onClick={onClickPlay}>
                 <FontAwesomeIcon icon={faPlay} className="icon" />
                 재생
               </BigPlayBtn>
@@ -341,9 +352,12 @@ const Home = () => {
                     }}
                   />
 
-                  <BigTitle>{clickedMovie.title}</BigTitle>
+                  <BigTitle>{clickedMovie.title || clickedMovie.name}</BigTitle>
                   <BigBox style={{ position: "absolute", top: "300px" }}>
-                    <BigPlayBtn style={{ margin: "0 10px 0 0" }}>
+                    <BigPlayBtn
+                      style={{ margin: "0 10px 0 0" }}
+                      onClick={onClickPlay}
+                    >
                       ▶️ 재생
                     </BigPlayBtn>
                     <InfoBtn
@@ -378,7 +392,6 @@ const Home = () => {
                       )}
                     </InfoBtn>
                   </BigBox>
-
                   <BigBox>
                     <p style={{ margin: "0 5px 0 0" }}>
                       {clickedMovie.adult ? "18세" : "15세 이상"}
@@ -395,44 +408,35 @@ const Home = () => {
                       </span>
                     ))}
                   </BigBox>
-
                   <BigOverview>{clickedMovie.overview}</BigOverview>
-
                   <BigBox>
                     <div style={{ flex: 1 }}>출연 : </div>
                     <div
                       className="characters"
-                      style={{ wordBreak: "keep-all", flex: 33 }}
+                      style={{
+                        wordBreak: "keep-all",
+                        flex: 25,
+                      }}
                     >
-                      {characterData?.cast &&
-                        characterData.cast.slice(0, 11).map((character) => (
-                          <span className="character" key={character.id}>
-                            {character.original_name}
-                          </span>
-                        ))}
-                      {moreBtn ? (
-                        <MoreBtn onClick={onMoreClick}>닫기</MoreBtn>
-                      ) : (
-                        <MoreBtn onClick={onMoreClick}>더보기</MoreBtn>
-                      )}
-                    </div>
-                  </BigBox>
-                  <BigBox>
-                    {moreBtn ? (
-                      <div
-                        className="characters"
-                        style={{ wordBreak: "keep-all", flex: 33 }}
-                      >
-                        {characterData?.cast &&
-                          characterData.cast
-                            .slice(11, characterData.cast.length)
+                      {characterData?.cast && characterData.cast.length > 0 ? (
+                        <>
+                          {characterData.cast
+                            .slice(0, moreBtn ? 11 : characterData.cast.length)
                             .map((character) => (
                               <span className="character" key={character.id}>
                                 {character.original_name}
                               </span>
                             ))}
-                      </div>
-                    ) : null}
+                          {characterData.cast.length > 11 && (
+                            <MoreBtn onClick={onMoreClick}>
+                              {moreBtn ? "더보기" : "간단히 보기"}
+                            </MoreBtn>
+                          )}
+                        </>
+                      ) : (
+                        <span>정보없음</span>
+                      )}
+                    </div>
                   </BigBox>
                 </>
               )}
