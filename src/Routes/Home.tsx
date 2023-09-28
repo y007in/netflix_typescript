@@ -7,6 +7,7 @@ import {
   faThumbsUp,
   faCheck,
   faCircleExclamation,
+  faClose,
 } from "@fortawesome/free-solid-svg-icons";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
 import {
@@ -63,6 +64,13 @@ const OverView = styled.p`
   line-height: 140%;
   margin-bottom: 20px;
 `;
+const Adult = styled.div`
+  position: absolute;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  font-size: 28px;
+  padding: 5px 40px 5px 8px;
+`;
 
 const SliderBox = styled.div`
   position: relative;
@@ -117,6 +125,21 @@ const BigMovie = styled(motion.div)`
   border-radius: 15px;
   background-color: ${(props) => props.theme.black.lighter};
   z-index: 99999;
+`;
+
+const Close = styled.div`
+  width: 15px;
+  height: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 2px solid ${(props) => props.theme.white.lighter};
+  border-radius: 50px;
+  padding: 10px;
+  cursor: pointer;
 `;
 const BigCover = styled.div`
   width: 100%;
@@ -267,8 +290,8 @@ const Home = () => {
     clickedMovie = movieList.find((movie) => movie.id.toString() === movieId);
   }
   const onClickPlay = () => {
-    const trailerKey = trailerData?.results[0].key;
-    if (trailerKey) {
+    if (trailerData && trailerData.results && trailerData.results.length > 0) {
+      const trailerKey = trailerData?.results[0].key;
       const youtubeURL = `https://www.youtube.com/watch?v=${trailerKey}`;
       window.open(youtubeURL, "_blank");
     } else {
@@ -288,6 +311,10 @@ const Home = () => {
           >
             <Title>{popularData?.results[randomIndex]?.title}</Title>
             <OverView>{popularData?.results[randomIndex]?.overview}</OverView>
+            <Adult>
+              {" "}
+              {popularData?.results[randomIndex]?.adult ? "18 + " : "15 +"}
+            </Adult>
             <div style={{ display: "flex", gap: "10px" }}>
               <BigPlayBtn onClick={onClickPlay}>
                 <FontAwesomeIcon icon={faPlay} className="icon" />
@@ -343,6 +370,9 @@ const Home = () => {
             >
               {clickedMovie && (
                 <>
+                  <Close onClick={onOverlayClick}>
+                    <FontAwesomeIcon color="white" icon={faClose} />
+                  </Close>
                   <BigCover
                     style={{
                       backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
