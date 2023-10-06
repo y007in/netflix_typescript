@@ -91,3 +91,9 @@ export function getTv() {
     `${BASE_PATH}/tv/top_rated?api_key=${API_KEY}&language=ko-KR`
   ).then((response) => response.json());
 }
+
+export function getGenreTvs() {
+  return fetch(
+    `${BASE_PATH}/genre/tv/list?api_key=${API_KEY}&language=ko-KR`
+  ).then((response) => response.json());
+}

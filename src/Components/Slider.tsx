@@ -8,7 +8,7 @@ import {
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { IMovieTv, IGenre } from "../api";
+import { IMovieTv, IGenre, IGetGenre } from "../api";
 import MovieBox from "./MovieBox";
 
 const Sliders = styled.div`
@@ -44,9 +44,9 @@ const Btn = styled.button`
   svg {
     opacity: 0.3;
     transition: 0.3s;
-    &:hover {
-      opacity: 1;
-    }
+  }
+  &:hover svg {
+    opacity: 1;
   }
 `;
 
@@ -64,11 +64,17 @@ const rowVariants = {
 
 interface SliderProps {
   movie: IMovieTv[];
-  genreData: { genres: IGenre[] } | undefined;
+  genreList: IGenre[] | undefined;
   movieListType: string;
+  onPlayClick: () => void;
 }
 
-const Slider = ({ movie, genreData, movieListType }: SliderProps) => {
+const Slider = ({
+  movie,
+  genreList,
+  movieListType,
+  onPlayClick,
+}: SliderProps) => {
   const [back, setBack] = useState(false);
   const history = useNavigate();
   const [index, setIndex] = useState(0);
@@ -122,19 +128,20 @@ const Slider = ({ movie, genreData, movieListType }: SliderProps) => {
             key={index}
           >
             {movie
-              .slice(1)
+              .slice(0)
               .slice(index * offset, index * offset + offset)
               .map((movie) => (
                 <MovieBox
                   key={movie.id}
                   movie={movie}
-                  genreData={genreData}
+                  genreList={genreList}
                   movieListType={movieListType}
                   plus={plus}
                   thumb={thumb}
                   onPlusClick={onPlusClick}
                   onThumbClick={onThumbClick}
                   onBoxClicked={() => onBoxClicked(movie.id)}
+                  onPlayClicked={onPlayClick}
                 />
               ))}
           </Row>

@@ -135,23 +135,25 @@ const infoVariants = {
 
 interface MovieBoxProps {
   movie: IMovieTv;
-  genreData: { genres: IGenre[] } | undefined;
+  genreList: IGenre[] | undefined;
   plus: boolean;
   thumb: boolean;
   onPlusClick: () => void;
   onThumbClick: () => void;
   onBoxClicked: (movieId: number) => void;
+  onPlayClicked: () => void;
   movieListType: string;
 }
 
 const MovieBox = ({
   movie,
-  genreData,
+  genreList,
   plus,
   thumb,
   onPlusClick,
   onThumbClick,
   onBoxClicked,
+  onPlayClicked,
   movieListType,
 }: MovieBoxProps) => {
   return (
@@ -171,7 +173,7 @@ const MovieBox = ({
         </h4>
         <div className="info_content">
           <InfoBox>
-            <InfoBtn>
+            <InfoBtn onClick={onPlayClicked}>
               <FontAwesomeIcon color="black" icon={faPlay} />
             </InfoBtn>
             <InfoBtn onClick={onPlusClick}>
@@ -200,7 +202,7 @@ const MovieBox = ({
           <InfoBox>
             {movie.genre_ids?.map((id) => (
               <span className="genre" key={id}>
-                {genreData?.genres.find((item) => item.id === id)?.name}
+                {genreList?.find((item) => item.id === id)?.name}
               </span>
             ))}
           </InfoBox>

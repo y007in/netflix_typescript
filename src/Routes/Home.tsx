@@ -15,10 +15,12 @@ import {
   getMovies,
   getGenreMovies,
   getTv,
+  getGenreTvs,
   getCharacterMovies,
   getTrailerMovies,
   IMovieTv,
   IGetMoviesResult,
+  IGenre,
   IGetGenre,
   IGetTrailer,
   IGetCharacter,
@@ -27,6 +29,10 @@ import { makeImagePath } from "../utill";
 import styled from "styled-components";
 import { useNavigate, useMatch, PathMatch, useParams } from "react-router-dom";
 import Slider from "../Components/Slider";
+
+interface BubbleProps {
+  isHovered: boolean;
+}
 
 const Wrapper = styled.div`
   background: #000;
@@ -68,7 +74,7 @@ const Adult = styled.div`
   position: absolute;
   right: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  font-size: 28px;
+  font-size: 20px;
   padding: 5px 40px 5px 8px;
 `;
 
@@ -104,6 +110,29 @@ const InfoBtn = styled.button`
   }
 `;
 
+const Bubble = styled.div<BubbleProps>`
+  position: absolute;
+  top: -50px;
+  background-color: ${(props) => props.theme.white.lighter};
+  padding: 10px 15px;
+  border-radius: 5px;
+  transition: opacity 0.3s ease;
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 20px solid transparent;
+    border-top-color: ${(props) => props.theme.white.lighter};
+    border-bottom: 0;
+    margin-left: -20px;
+    margin-bottom: -10px;
+  }
+  opacity: ${(props) => (props.isHovered ? 1 : 0)};
+`;
+
 const Overlay = styled(motion.div)`
   position: fixed;
   top: 0;
@@ -111,12 +140,13 @@ const Overlay = styled(motion.div)`
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   opacity: 0;
+  z-index: 9;
 `;
 
 const BigMovie = styled(motion.div)`
   position: absolute;
   width: 70vw;
-  height: 80vh;
+  height: 100vh;
   left: 0;
   right: 0;
   margin: 0 auto;
@@ -124,7 +154,7 @@ const BigMovie = styled(motion.div)`
   overflow: scroll;
   border-radius: 15px;
   background-color: ${(props) => props.theme.black.lighter};
-  z-index: 99999;
+  z-index: 10;
 `;
 
 const Close = styled.div`
@@ -152,6 +182,7 @@ const BigTitle = styled.h2`
   color: ${(props) => props.theme.white.lighter};
   padding: 0 30px;
   font-size: 36px;
+  font-weight: bold;
   position: relative;
   top: -100px;
 `;
@@ -223,6 +254,20 @@ const MoreBtn = styled.button`
   text-decoration: underline;
 `;
 
+const ShowMessage = styled.div`
+  text-align: center;
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20%;
+  background-color: ${(props) => props.theme.red};
+  padding: 15px;
+  z-index: 999999;
+  border-radius: 5px;
+  font-weight: bold;
+`;
+
 const Home = () => {
   const history = useNavigate();
   const bigMovieMatch: PathMatch<string> | null = useMatch("/movies/:movieId");
@@ -239,6 +284,11 @@ const Home = () => {
     ["movies", "Genre"],
     getGenreMovies
   );
+  const { data: genreTvData } = useQuery<IGetGenre>(
+    ["tvs", "Genre"],
+    getGenreTvs
+  );
+
   const { data: trailerData } = useQuery<IGetTrailer>(
     ["movies", "Trailer", movieId],
     () => getTrailerMovies(movieId)
@@ -248,6 +298,10 @@ const Home = () => {
     () => getCharacterMovies(movieId)
   );
 
+  const onBoxClicked = (movieId: number | undefined) => {
+    history(`/movies/${movieId}`);
+  };
+
   const [plus, setPlus] = useState(false);
   const onPlusClick = () => {
     setPlus(!plus);
@@ -256,6 +310,8 @@ const Home = () => {
   const onThumbClick = () => {
     setThumb(!thumb);
   };
+  const [isPlusHovered, setIsPlusHovered] = useState(false);
+  const [isLikeHovered, setIsLikeHovered] = useState(false);
 
   const [randomIndex, setRandomIndex] = useState(0);
   const [moreBtn, setMoreBtn] = useState(true);
@@ -289,13 +345,23 @@ const Home = () => {
         : [];
     clickedMovie = movieList.find((movie) => movie.id.toString() === movieId);
   }
+
+  const genreList: IGenre[] =
+    genreData && genreTvData
+      ? [...genreData.genres, ...genreTvData.genres]
+      : [];
+
+  const [showMessage, setShowMessage] = useState(false);
   const onClickPlay = () => {
     if (trailerData && trailerData.results && trailerData.results.length > 0) {
       const trailerKey = trailerData?.results[0].key;
       const youtubeURL = `https://www.youtube.com/watch?v=${trailerKey}`;
       window.open(youtubeURL, "_blank");
     } else {
-      alert("관련된 영상이 없습니다.");
+      setShowMessage(true);
+      setTimeout(() => {
+        setShowMessage(false);
+      }, 2000);
     }
   };
   return (
@@ -312,7 +378,6 @@ const Home = () => {
             <Title>{popularData?.results[randomIndex]?.title}</Title>
             <OverView>{popularData?.results[randomIndex]?.overview}</OverView>
             <Adult>
-              {" "}
               {popularData?.results[randomIndex]?.adult ? "18 + " : "15 +"}
             </Adult>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -320,7 +385,14 @@ const Home = () => {
                 <FontAwesomeIcon icon={faPlay} className="icon" />
                 재생
               </BigPlayBtn>
-              <BigPlayBtn>
+              {showMessage && (
+                <ShowMessage>제공된 영상이 없습니다.</ShowMessage>
+              )}
+              <BigPlayBtn
+                onClick={() =>
+                  onBoxClicked(popularData?.results[randomIndex].id)
+                }
+              >
                 <FontAwesomeIcon
                   className="icon"
                   color="black"
@@ -334,24 +406,27 @@ const Home = () => {
             <SliderTitle>지금 뜨는 콘텐츠</SliderTitle>
             <Slider
               movie={popularData?.results || []}
-              genreData={genreData}
+              genreList={genreList}
               movieListType="popular"
+              onPlayClick={onClickPlay}
             />
           </SliderBox>
           <SliderBox>
             <SliderTitle>현재 상영작</SliderTitle>
             <Slider
               movie={nowPlayingData?.results || []}
-              genreData={genreData}
+              genreList={genreList}
               movieListType="nowPlaying"
+              onPlayClick={onClickPlay}
             />
           </SliderBox>
           <SliderBox>
             <SliderTitle>Top 10 시리즈</SliderTitle>
             <Slider
               movie={topRatedData?.results || []}
-              genreData={genreData}
+              genreList={genreList}
               movieListType="topRated"
+              onPlayClick={onClickPlay}
             />
           </SliderBox>
         </>
@@ -364,6 +439,7 @@ const Home = () => {
               exit={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             />
+            {showMessage && <ShowMessage>제공된 영상이 없습니다.</ShowMessage>}
             <BigMovie
               layoutId={bigMovieMatch.params.movieId}
               style={{ top: scrollY.get() + 100 }}
@@ -376,8 +452,7 @@ const Home = () => {
                   <BigCover
                     style={{
                       backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
-                        clickedMovie.backdrop_path,
-                        "w500"
+                        clickedMovie.backdrop_path
                       )})`,
                     }}
                   />
@@ -390,14 +465,20 @@ const Home = () => {
                     >
                       ▶️ 재생
                     </BigPlayBtn>
+
                     <InfoBtn
                       onClick={onPlusClick}
+                      onMouseEnter={() => setIsPlusHovered(true)}
+                      onMouseLeave={() => setIsPlusHovered(false)}
                       style={{
                         width: "30px",
                         height: "30px",
                         fontSize: "14px",
                       }}
                     >
+                      <Bubble isHovered={isPlusHovered}>
+                        내가 찜한 콘텐츠에 추가
+                      </Bubble>
                       {plus ? (
                         <FontAwesomeIcon color="white" icon={faCheck} />
                       ) : (
@@ -406,12 +487,15 @@ const Home = () => {
                     </InfoBtn>
                     <InfoBtn
                       onClick={onThumbClick}
+                      onMouseEnter={() => setIsLikeHovered(true)}
+                      onMouseLeave={() => setIsLikeHovered(false)}
                       style={{
                         width: "30px",
                         height: "30px",
                         fontSize: "14px",
                       }}
                     >
+                      <Bubble isHovered={isLikeHovered}>좋아요</Bubble>
                       {thumb ? (
                         <FontAwesomeIcon color="white" icon={faThumbsUp} />
                       ) : (
@@ -434,7 +518,7 @@ const Home = () => {
                   <BigBox>
                     {clickedMovie.genre_ids?.map((id) => (
                       <span className="genre" key={id}>
-                        {genreData?.genres.find((item) => item.id === id)?.name}
+                        {genreList?.find((item) => item.id === id)?.name}
                       </span>
                     ))}
                   </BigBox>
@@ -445,7 +529,7 @@ const Home = () => {
                       className="characters"
                       style={{
                         wordBreak: "keep-all",
-                        flex: 25,
+                        flex: 18,
                       }}
                     >
                       {characterData?.cast && characterData.cast.length > 0 ? (
